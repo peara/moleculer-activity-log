@@ -1,0 +1,61 @@
+{
+  "name": "auth-service",
+  "version": "1.0.0",
+  "description": "My Moleculer microservice",
+  "scripts": {
+    "dev": "moleculer-runner --repl --hot services",
+    "start": "moleculer-runner service.js",
+    "ci": "jest --watch",
+    "test": "jest --coverage",
+    "test-ci": "jest --coverage --forceExit",
+    "test-inspect": "node --inspect-brk node_modules/.bin/jest --runInBand --detectOpenHandles",
+    "lint": "eslint services app test",
+    "lint-fix": "eslint services app test --fix",
+    "docker-start": "docker-compose -f docker/docker-compose.yml up -d",
+    "docker-stop": "docker-compose -f docker/docker-compose.yml down",
+    "db": "psql -U super_node -h localhost -d lux_test"
+  },
+  "keywords": [
+    "microservices",
+    "moleculer"
+  ],
+  "author": "",
+  "devDependencies": {
+    "eslint": "^5.0.1",
+    "jest": "^23.3.0",
+    "jest-cli": "^23.3.0",
+    "moleculer-repl": "^0.5.0"
+  },
+  "dependencies": {
+    "amqplib": "^0.5.3",
+    "bcrypt": "^3.0.6",
+    "debug": "^4.1.1",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "esm": "^3.2.25",
+    "ioredis": "^3.2.2",
+    "jsonwebtoken": "^8.5.1",
+    "knex": "^0.17.5",
+    "lodash": "^4.17.11",
+    "moleculer": "^0.13.0",
+    "moment": "^2.24.0",
+    "njwt": "^1.0.0",
+    "pg": "^7.11.0",
+    "randomstring": "^1.1.5",
+    "redlock": "^3.1.2"
+  },
+  "engines": {
+    "node": ">= 8.x.x"
+  },
+  "jest": {
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node",
+    "rootDir": ".",
+    "collectCoverageFrom": [
+      "**/app/**",
+      "**/services/**"
+    ],
+    "roots": [
+      "./test"
+    ]
+  }
+}
