@@ -1,0 +1,79 @@
+version: "3.7"
+
+services:
+  api:
+    build:
+      context: .
+    image: host-service
+    env_file: docker-compose.env
+    environment:
+      SERVICES: api
+      PORT: 3000
+    labels:
+      - "traefik.enable=true"   
+      - "traefik.backend=api"
+      - "traefik.port=3000"
+      - "traefik.frontend.entryPoints=http"
+      - "traefik.frontend.rule=PathPrefix:/"
+    networks:
+      lux_network:
+  redis:
+    image: redis:alpine
+    container_name: "node-redis"
+    ports:
+      - "6379:6379"
+    networks:
+      lux_network:
+        aliases: 
+          - node-redis
+  postgres:
+    image: "postgres:11.3"
+    environment:
+      POSTGRES_DB: super_lux
+      POSTGRES_USER: super_node
+      POSTGRES_PASSWORD: node@node
+    ports:
+      - 5432:5432
+    container_name: "node-postgres"
+    networks: 
+      lux_network:
+        ipv4_address: 172.16.1.3
+        aliases:
+          - lux_db
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    container_name: "node-adminer"
+    networks:
+      lux_network:
+        ipv4_address: 172.16.1.4
+  amqp:
+    image: rabbitmq:3
+    restart: always
+    ports:
+      - "5672:5672"
+    container_name: "node-broker"
+    networks:
+      lux_network:
+        aliases: 
+          - node-amqp
+  traefik:
+    image: traefik
+    command: --web --docker --docker.domain=docker.localhost --logLevel=INFO --docker.exposedbydefault=false
+    ports:
+      - "3000:80"
+      - "3001:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev/null:/traefik.toml
+    networks:
+      lux_network:
+networks:
+  lux_network:
+    name: "lux_network"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.0.0/16

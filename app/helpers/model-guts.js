@@ -49,7 +49,7 @@ module.exports = ({
         .where({ id })
         .timeout(timeout);
 
-    const destroyWithParams = filters =>{
+    const destroyWithParams = filters => {
         knex.del()
             .from(tableName)
             .where(filters)

@@ -20,4 +20,4 @@ module.exports = {
         "no-console": "error",
         "arrow-spacing": ["error", { "before": true, "after": true  }]
     }
-};
+}

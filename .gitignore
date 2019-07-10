@@ -7,3 +7,5 @@ yarn-error.log
 .env
 .vscode/
 tags
+config/luxstay.json
+uploads/*

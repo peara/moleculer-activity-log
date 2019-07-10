@@ -1,5 +1,5 @@
 {
-  "name": "auth-service",
+  "name": "activity.logs-service",
   "version": "1.0.0",
   "description": "My Moleculer microservice",
   "scripts": {
@@ -34,10 +34,11 @@
     "esm": "^3.2.25",
     "ioredis": "^3.2.2",
     "jsonwebtoken": "^8.5.1",
-    "knex": "^0.17.5",
+    "knex": "^0.17.6",
     "lodash": "^4.17.11",
     "moleculer": "^0.13.0",
     "moment": "^2.24.0",
+    "moment-timezone": "^0.5.26",
     "njwt": "^1.0.0",
     "pg": "^7.11.0",
     "randomstring": "^1.1.5",
