@@ -6,10 +6,10 @@ services:
       POSTGRES_DB: auth_lux
       POSTGRES_USER: auth_lux
       POSTGRES_PASSWORD: node@node
-    container_name: "auth-node-postgres"  
+    container_name: "auth-node-postgres"
     ports:
-      - 5002:5002   
-    networks: 
+      - 5002:5002
+    networks:
       lux_network:
         ipv4_address: 172.16.2.3
   auth-service:

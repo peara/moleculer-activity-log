@@ -1,0 +1,22 @@
+image: node:10.16
+
+# This folder is cached between builds
+# http://docs.gitlab.com/ce/ci/yaml/README.html#cache
+cache:
+  paths:
+  - node_modules/
+
+test:
+  services:
+    - postgres:11.3
+
+  variables:
+    POSTGRES_DB: activity_test
+    POSTGRES_USER: activity_ci
+    POSTGRES_PASSWORD: "activity_ci"
+
+  script:
+    - npm install
+    - npx knex migrate:latest --env ci
+    - npm run lint
+    - ENVIRONMENT=ci npm run test-ci

@@ -1,91 +1,79 @@
 'use strict';
 
-// TODO refactor this
+const path = require('path');
+
+const migrations = {
+    directory: path.join(__dirname, 'migrations')
+};
+
+const seeds = {
+    directory: path.join(__dirname, 'seeds')
+};
+
+const baseConfig = {
+    client: 'pg',
+    version: '11.3',
+    migrations,
+    seeds
+};
+
 module.exports = {
     development: {
-        client: 'pg',
-        version: '11.3',
+        ...baseConfig,
         connection: {
             host: 'localhost',
             user: 'super_node',
             password: 'node@node',
-            database: 'super_lux',
+            database: 'activity_dev',
             port: '5432'
-        },
-        migrations: {
-            directory: __dirname + '/migrations'
-        },
-        seeds: {
-            directory: __dirname + '/seeds'
         }
     },
     test: {
-        client: 'pg',
-        version: '11.3',
+        ...baseConfig,
         connection: {
             host: 'localhost',
             user: 'super_node',
             password: 'node@node',
-            database: 'lux_test',
+            database: 'activity_test',
             port: '5432'
-        },
-        migrations: {
-            directory: __dirname + '/migrations'
-        },
-        seeds: {
-            directory: __dirname + '/seeds'
         }
     },
     ci: {
-        client: 'pg',
-        version: '11.3',
+        ...baseConfig,
         connection: {
             host: 'postgres',
-            user: 'super_node',
-            password: 'node@node',
-            database: 'lux_test',
+            user: 'activity_ci',
+            password: 'activity_ci',
+            database: 'activity_test',
             port: '5432'
-        },
-        migrations: {
-            directory: __dirname + '/migrations'
-        },
-        seeds: {
-            directory: __dirname + '/seeds'
         }
     },
     staging: {
-        client: 'postgresql',
+        ...baseConfig,
         connection: {
             host: '127.0.0.1',
             user: 'postgres',
             password: 'nodev1db',
-            database: 'super_host',
-            port: '3307'
+            database: 'base_staging',
+            port: '5432'
         },
         pool: {
             min: 2,
             max: 10
-        },
-        migrations: {
-            tableName: 'knex_migrations'
         }
     },
     production: {
-        client: 'pg',
-        version: '11.3',
+        ...baseConfig,
         connection: {
             host: '127.0.0.1',
             user: 'postgres',
             password: 'nodev1db',
-            database: 'super_host',
-            port: '3307'
+            database: 'base_prod',
+            port: '5432'
         },
         pool: {
             min: 2,
             max: 10
-        },
-        migrations: {
-            tableName: 'knex_migrations'
         }
     },
     onUpdateTrigger: table => `

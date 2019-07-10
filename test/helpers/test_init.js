@@ -2,13 +2,10 @@
 
 const knex = require('../../config/database.js');
 
-var tables = [
-    'users'
-];
-
 function truncate() {
-    return knex.raw('truncate table users cascade');
-    // return Promise.all(tables.map(table => knex.raw('truncate table ' + table + ' cascade')));
+    return Promise.all([
+        knex.raw('truncate activity_logs cascade')
+    ]);
 }
 
 module.exports = {

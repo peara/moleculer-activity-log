@@ -1,0 +1,42 @@
+version: "3.7"
+
+services:
+  redis:
+    image: redis:alpine
+    container_name: "dev-redis"
+    ports:
+      - "6379:6379"
+    networks:
+      dev_network:
+        aliases: 
+          - dev-redis
+  postgres:
+    image: "postgres:11.3"
+    environment:
+      POSTGRES_DB: super_lux
+      POSTGRES_USER: super_node
+      POSTGRES_PASSWORD: node@node
+    ports:
+      - 5432:5432
+    container_name: "dev-postgres"
+    networks: 
+      dev_network:
+        aliases:
+          - dev_db
+  amqp:
+    image: rabbitmq:3
+    restart: always
+    ports:
+      - "5672:5672"
+    container_name: "dev-broker"
+    networks:
+      dev_network:
+        aliases: 
+          - dev-amqp
+networks:
+  dev_network:
+    name: "dev_network"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16
