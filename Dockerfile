@@ -1,14 +1,11 @@
 FROM node:10.16
 
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 
 RUN mkdir /app
 WORKDIR /app
-
-COPY package.json .
-
-RUN npm install --production
-
 COPY . .
 
-CMD ["npm", "start"]
+RUN npm i
+
+RUN chmod +x docker/entrypoint.sh

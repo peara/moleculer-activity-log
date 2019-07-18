@@ -21,11 +21,11 @@ module.exports = {
     development: {
         ...baseConfig,
         connection: {
-            host: 'localhost',
-            user: 'super_node',
-            password: 'node@node',
-            database: 'activity_dev',
-            port: '5432'
+            host: process.env.ACTIVITY_DB_HOST || 'localhost',
+            user: process.env.ACTIVITY_DB_USER || 'super_node',
+            password: process.env.ACTIVITY_DB_PASSWORD || 'node@node',
+            database: process.env.ACTIVITY_DB_NAME || 'activity-log_dev',
+            port: process.env.ACTIVITY_DB_PORT || '5432'
         }
     },
     test: {
@@ -34,7 +34,7 @@ module.exports = {
             host: 'localhost',
             user: 'super_node',
             password: 'node@node',
-            database: 'activity_test',
+            database: 'activity-log_test',
             port: '5432'
         }
     },
@@ -42,9 +42,9 @@ module.exports = {
         ...baseConfig,
         connection: {
             host: 'postgres',
-            user: 'activity_ci',
-            password: 'activity_ci',
-            database: 'activity_test',
+            user: 'super_node',
+            password: 'node@node',
+            database: 'activity-log_test',
             port: '5432'
         }
     },

@@ -11,12 +11,11 @@ test:
     - postgres:11.3
 
   variables:
-    POSTGRES_DB: activity_test
-    POSTGRES_USER: activity_ci
-    POSTGRES_PASSWORD: "activity_ci"
+    POSTGRES_DB: activity-log_test
+    POSTGRES_USER: super_node
+    POSTGRES_PASSWORD: "node@node"
 
   script:
     - npm install
     - npx knex migrate:latest --env ci
     - npm run lint
-    - ENVIRONMENT=ci npm run test-ci
