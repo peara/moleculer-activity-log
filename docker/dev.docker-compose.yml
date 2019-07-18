@@ -1,42 +1,25 @@
 version: "3.7"
-
 services:
-  redis:
-    image: redis:alpine
-    container_name: "dev-redis"
-    ports:
-      - "6379:6379"
-    networks:
-      dev_network:
-        aliases: 
-          - dev-redis
-  postgres:
+  activity-log-db:
     image: "postgres:11.3"
     environment:
-      POSTGRES_DB: super_lux
-      POSTGRES_USER: super_node
+      POSTGRES_DB: activity-log_dev
+      POSTGRES_USER: activity-log_dev
       POSTGRES_PASSWORD: node@node
+    container_name: "upload-node-postgres"
     ports:
       - 5432:5432
-    container_name: "dev-postgres"
-    networks: 
-      dev_network:
-        aliases:
-          - dev_db
-  amqp:
-    image: rabbitmq:3
-    restart: always
-    ports:
-      - "5672:5672"
-    container_name: "dev-broker"
     networks:
       dev_network:
-        aliases: 
-          - dev-amqp
+  activity-log-service:
+    env_file: dev.docker-compose.env
+    container_name: "activity-log-service"
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    entrypoint: docker/entrypoint.sh
+    networks:
+      dev_network:
 networks:
   dev_network:
-    name: "dev_network"
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.18.0.0/16
+    external: true

@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /**
  * Moleculer ServiceBroker configuration file
@@ -7,40 +7,40 @@
  *
  * Overwrite options in production:
  * ================================
- * You can overwrite any option with environment variables.
- * For example to overwrite the "logLevel", use `LOGLEVEL=warn` env var.
- * To overwrite a nested parameter, e.g. retryPolicy.retries, use `RETRYPOLICY_RETRIES=10` env var.
+ * 	You can overwrite any option with environment variables.
+ * 	For example to overwrite the "logLevel", use `LOGLEVEL=warn` env var.
+ * 	To overwrite a nested parameter, e.g. retryPolicy.retries, use `RETRYPOLICY_RETRIES=10` env var.
  *
- * To overwrite broker’s deeply nested default options, which are not presented in "moleculer.config.js",
- * via environment variables, use the `MOL_` prefix and double underscore `__` for nested properties in .env file.
- * For example, to set the cacher prefix to `MYCACHE`, you should declare an env var as `MOL_CACHER__OPTIONS__PREFIX=MYCACHE`.
+ * 	To overwrite broker’s deeply nested default options, which are not presented in "moleculer.config.js",
+ * 	via environment variables, use the `MOL_` prefix and double underscore `__` for nested properties in .env file.
+ * 	For example, to set the cacher prefix to `MYCACHE`, you should declare an env var as `MOL_CACHER__OPTIONS__PREFIX=MYCACHE`.
  */
 module.exports = {
     // Namespace of nodes to segment your nodes on the same network.
-    namespace: "",
+    namespace: '',
     // Unique node identifier. Must be unique in a namespace.
     nodeID: null,
 
     // Enable/disable logging or use custom logger. More info: https://moleculer.services/docs/0.13/logging.html
     logger: true,
     // Log level for built-in console logger. Available values: trace, debug, info, warn, error, fatal
-    logLevel: "info",
+    logLevel: 'info',
     // Log formatter for built-in console logger. Available values: default, simple, short. It can be also a `Function`.
-    logFormatter: "default",
+    logFormatter: 'default',
     // Custom object & array printer for built-in console logger.
     logObjectPrinter: null,
 
     // Define transporter.
     // More info: https://moleculer.services/docs/0.13/networking.html
-    transporter: "amqp://localhost:5672",
+    transporter: process.env.TRANSPORTER || 'amqp://localhost:5672',
 
     // Define a cacher. More info: https://moleculer.services/docs/0.13/caching.html
-    cacher: "redis://localhost:6379",
+    cacher: process.env.CACHER || 'redis://localhost:6379',
 
     // Define a serializer.
     // Available values: "JSON", "Avro", "ProtoBuf", "MsgPack", "Notepack", "Thrift".
     // More info: https://moleculer.services/docs/0.13/networking.html
-    serializer: "JSON",
+    serializer: 'JSON',
 
     // Number of milliseconds to wait before reject a request with a RequestTimeout error. Disabled: 0
     requestTimeout: 10 * 1000,
@@ -74,7 +74,7 @@ module.exports = {
         // Enable feature
         enabled: false,
         // Number of milliseconds to wait before shutdowning the process
-        shutdownTimeout: 5000,
+        shutdownTimeout: 5000
     },
 
     // Disable built-in request & emit balancer. (Transporter must support it, as well.)
@@ -84,7 +84,7 @@ module.exports = {
     registry: {
         // Define balancing strategy.
         // Available values: "RoundRobin", "Random", "CpuUsage", "Latency"
-        strategy: "RoundRobin",
+        strategy: 'RoundRobin',
         // Enable local action call preferring.
         preferLocal: true
     },
@@ -112,7 +112,7 @@ module.exports = {
         // Maximum concurrent executions.
         concurrency: 10,
         // Maximum size of queue
-        maxQueueSize: 100,
+        maxQueueSize: 100
     },
 
     // Enable parameters validation. More info: https://moleculer.services/docs/0.13/validating.html
@@ -121,7 +121,7 @@ module.exports = {
     validator: null,
 
     // Enable metrics function. More info: https://moleculer.services/docs/0.13/metrics.html
-    metrics: process.env.METRICS,
+    metrics: process.env.METRICS || false,
     // Rate of metrics calls. 1 means to measure every request, 0 means to measure nothing.
     metricsRate: 1,
 
