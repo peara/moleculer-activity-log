@@ -1,21 +1,37 @@
-image: node:10.16
+stages:
+  - test
+  - deploy
 
-# This folder is cached between builds
-# http://docs.gitlab.com/ce/ci/yaml/README.html#cache
-cache:
-  paths:
-  - node_modules/
-
-test:
-  services:
-    - postgres:11.3
-
-  variables:
-    POSTGRES_DB: activity-log_test
-    POSTGRES_USER: super_node
-    POSTGRES_PASSWORD: "node@node"
+test-ci:
+  stage: test
+  tags:
+    - runner-docker
+  image: node:10.16
+  # This folder is cached between builds
+  # http://docs.gitlab.com/ce/ci/yaml/README.html#cache
+  cache:
+    paths:
+      - node_modules/
 
   script:
     - npm install
     - npx knex migrate:latest --env ci
     - npm run lint
+
+deploy-staging:
+  stage: deploy
+  tags:
+    - runner-deploy
+  variables:
+    IMAGE_NAME: activity-log-service
+    GIT_STRATEGY: fetch
+  script:
+    - docker build -t $IMAGE_NAME .
+    - cat "$GCLOUD_SERVICE_KEY" | docker login -u _json_key --password-stdin https://asia.gcr.io
+    - docker tag $IMAGE_NAME asia.gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME
+    - docker push asia.gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME:latest
+    - /home/gitlab-runner/staging-scripts/deploy.sh
+  only:
+    - dev
+
+
