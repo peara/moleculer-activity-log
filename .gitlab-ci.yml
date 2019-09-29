@@ -15,8 +15,9 @@ test-ci:
 
   script:
     - npm install
-    - npx knex migrate:latest --env ci
     - npm run lint
+    - npm run test
+
 
 deploy-staging:
   stage: deploy
