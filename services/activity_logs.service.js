@@ -1,12 +1,12 @@
 'use strict';
 
-const { NotFoundError, ValidationError } = require('moleculer').Errors;
+const { ValidationError } = require('moleculer').Errors;
 const lodash = require('lodash');
 const knex = require('../config/database');
 const moment = require('moment-timezone');
 
 module.exports = {
-    name: 'activity.logs',
+    name: 'activity-logs',
     /**
      * Service settings
      */

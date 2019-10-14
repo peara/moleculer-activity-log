@@ -1,11 +1,11 @@
 'use strict';
 
 const { ServiceBroker } = require('moleculer');
-const ActivityLogService = require('../../services/activity.logs.service');
+const ActivityLogService = require('../../services/activity_logs.service');
 const { truncate } = require('../helpers/test_init');
 const moment = require('moment-timezone');
 
-describe("Test 'activity.logs' service", () => {
+describe("Test 'activity-logs' service", () => {
     let broker = new ServiceBroker();
     broker.createService(ActivityLogService);
     let tz = 'Asia/Ho_Chi_Minh';
@@ -21,7 +21,7 @@ describe("Test 'activity.logs' service", () => {
 
             // Get activity log
             setTimeout(async () => {
-                const request = await broker.call('activity.logs.get', {
+                const request = await broker.call('activity-logs.get', {
                     from: moment.tz(tz).subtract(1, 'days').format(),
                     to: moment.tz(tz).add(7, 'days').format()
                 });
@@ -67,7 +67,7 @@ describe("Test 'activity.logs' service", () => {
             // Get activity log
 
             setTimeout(async () => {
-                const request = await broker.call('activity.logs.get', {
+                const request = await broker.call('activity-logs.get', {
                     from: moment.tz(tz).subtract(1, 'days').format(),
                     to: moment.tz(tz).add(1, 'days').format(),
                     object_id: '1',
@@ -117,7 +117,7 @@ describe("Test 'activity.logs' service", () => {
             await broker.emit('activity.log', { action: 'auth.register', actor_id: '1', actor_type: 'User' });
 
             // Get activity log
-            const request = await broker.call('activity.logs.get', {
+            const request = await broker.call('activity-logs.get', {
                 from: moment.tz(tz).add(1, 'days').format(),
                 to: moment.tz(tz).add(7, 'days').format(),
                 actor_id: '2'

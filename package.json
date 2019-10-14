@@ -6,8 +6,8 @@
     "dev": "moleculer-runner --repl --hot services",
     "start": "moleculer-runner service.js",
     "ci": "jest --watch",
-    "test": "jest --coverage",
-    "test-ci": "jest --coverage --forceExit",
+    "test": "jest --coverage --runInBand",
+    "test-ci": "jest --coverage --forceExit --runInBand",
     "test-inspect": "node --inspect-brk node_modules/.bin/jest --runInBand --detectOpenHandles",
     "lint": "eslint services app test",
     "lint-fix": "eslint services app test --fix",
@@ -42,7 +42,8 @@
     "njwt": "^1.0.0",
     "pg": "^7.11.0",
     "randomstring": "^1.1.5",
-    "redlock": "^3.1.2"
+    "redlock": "^3.1.2",
+    "objection": "^1.6.9"
   },
   "engines": {
     "node": ">= 8.x.x"
