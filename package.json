@@ -33,6 +33,7 @@
     "eslint-config-airbnb-base": "^13.1.0",
     "esm": "^3.2.25",
     "ioredis": "^3.2.2",
+    "json-diff": "^0.5.4",
     "jsonwebtoken": "^8.5.1",
     "knex": "^0.17.6",
     "lodash": "^4.17.11",
@@ -40,10 +41,10 @@
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.26",
     "njwt": "^1.0.0",
+    "objection": "^1.6.9",
     "pg": "^7.11.0",
     "randomstring": "^1.1.5",
-    "redlock": "^3.1.2",
-    "objection": "^1.6.9"
+    "redlock": "^3.1.2"
   },
   "engines": {
     "node": ">= 8.x.x"

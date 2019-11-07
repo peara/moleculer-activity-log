@@ -4,7 +4,7 @@ const { ValidationError } = require('moleculer').Errors;
 const lodash = require('lodash');
 const knex = require('../config/database');
 const moment = require('moment-timezone');
-
+var jsonDiff = require('json-diff');
 module.exports = {
     name: 'activity-logs',
     /**
@@ -120,24 +120,7 @@ module.exports = {
         difference(params) {
             let before = params.before;
             let after = params.after;
-
-            if (before === undefined) {
-                before = {};
-            }
-            if (after === undefined) {
-                after = {};
-            }
-
-            const allkeys = lodash.union(lodash.keys(before), lodash.keys(after));
-            return lodash.reduce(allkeys, (res, key) => {
-                if (!lodash.isEqual(before[key], after[key])) {
-                    res[key] = {
-                        before: before[key] === undefined ? null : before[key],
-                        after: after[key] === undefined ? null : after[key]
-                    };
-                }
-                return res;
-            }, {});
+            return jsonDiff.diff(before, after);
         }
     },
 
