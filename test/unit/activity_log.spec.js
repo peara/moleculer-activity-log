@@ -86,26 +86,14 @@ describe("Test 'activity-logs' service", () => {
                         })
                     ])
                 );
-                const changes = JSON.parse(request.data[0].changes);
+                const changes = request.data[0].changes;
 
                 expect(changes).toEqual(
                     expect.objectContaining({
-                        description: {
-                            before: 'desc 1',
-                            after: 'desc 2'
-                        },
-                        phone: {
-                            before: '0987509255',
-                            after: '0389867734'
-                        },
-                        avatar: {
-                            before: '',
-                            after: 'abc.jpg'
-                        },
-                        date_of_birth: {
-                            before: '02/12/1990',
-                            after: '05/08/2019'
-                        }
+                        phone: { __new: '0389867734', __old: '0987509255' },
+                        avatar: { __new: 'abc.jpg', __old: '' },
+                        description: { __new: 'desc 2', __old: 'desc 1' },
+                        date_of_birth: { __new: '05/08/2019', __old: '02/12/1990' }
                     })
                 );
                 expect(request.data.length).toEqual(1);
