@@ -121,7 +121,7 @@ module.exports = {
     validator: null,
 
     // Enable metrics function. More info: https://moleculer.services/docs/0.13/metrics.html
-    metrics: process.env.METRICS || false,
+    metrics: process.env.METRICS || true,
     // Rate of metrics calls. 1 means to measure every request, 0 means to measure nothing.
     metricsRate: 1,
 
