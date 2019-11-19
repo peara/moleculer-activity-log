@@ -2,17 +2,20 @@
 
 const { ValidationError } = require('moleculer').Errors;
 const lodash = require('lodash');
-const knex = require('../config/database');
 const moment = require('moment-timezone');
-var jsonDiff = require('json-diff');
+const ActivityLog = require('../app/models/activity_log');
+const jsonpatch = require('fast-json-patch');
+const _ = require('lodash');
+
 module.exports = {
-    name: 'activity-logs',
+    name: 'activity-log',
     /**
      * Service settings
      */
     settings: {
         dateFormat: 'YYYY-MM-DD',
-        tz: 'Asia/Ho_Chi_Minh'
+        tz: 'Asia/Ho_Chi_Minh',
+        trackedTypes: ['property']
     },
 
     /**
@@ -31,7 +34,7 @@ module.exports = {
          *
          * @returns {Object} List of message
          */
-        get: {
+        list: {
             params: {
                 action: { type: 'string', optional: true },
                 object_type: { type: 'string', optional: true },
@@ -43,7 +46,7 @@ module.exports = {
                 page: {
                     type: 'string', integer: true, positive: true, optional: true
                 },
-                limit: {
+                per_page: {
                     type: 'number', integer: true, positive: true, optional: true
                 },
                 $$strict: true
@@ -51,8 +54,8 @@ module.exports = {
             handler(ctx) {
                 const params = ctx.params;
                 let filters = {};
-                let page = 1;
-                let limit = 10;
+                const page = parseInt(ctx.params.page, 10) || 1;
+                const perPage = parseInt(ctx.params.per_page, 10) || 10;
                 const from = moment.tz(
                     ctx.params.from,
                     this.settings.dateFormat,
@@ -73,21 +76,37 @@ module.exports = {
                 // Prepare filters
                 if ('object_id' in params) params.object_id = Number.parseInt(params.object_id, 10);
                 if ('actor_id' in params) params.object_id = Number.parseInt(params.actor_id, 10);
-                if ('page' in params) page = params.page;
-                if ('limit' in params) limit = params.limit;
 
-                return knex.from('activity_logs')
+                return ActivityLog.query()
                     .where(filters)
                     .where('created_at', '>=', from)
                     .where('created_at', '<=', to)
-                    .offset((page - 1) * limit)
-                    .limit(limit)
-                    .timeout(2000)
-                    .then(results => {
-                        if (results === undefined || results.length === 0) {
-                            return { data: [] };
-                        }
-                        return { data: results };
+                    .page(page, perPage);
+            }
+        },
+
+        showLatest: {
+            params: {
+                object_type: 'string',
+                last_modified_at: 'string'
+            },
+            handler(ctx) {
+                const lastModifiedAt = moment(ctx.params.last_modified_at);
+                return ActivityLog.query()
+                    .where({ object_type: ctx.params.object_type })
+                    .where('created_at', '>', lastModifiedAt)
+                    .distinct('object_id')
+                    .pluck('object_id')
+                    .orderBy('object_id')
+                    .then(ids => {
+                        return Promise.all(ids.map(id => {
+                            return this.regenerate({
+                                object_type: ctx.params.object_type,
+                                object_id: id
+                            });
+                        })).then(res => {
+                            return _.map(res, 'before');
+                        });
                     });
             }
         }
@@ -97,19 +116,8 @@ module.exports = {
      * Events
      */
     events: {
-        'activity.log'(payload) {
-            let record = lodash.omit(payload, ['before', 'after']);
-            record.changes = this.difference(payload);
-            knex('activity_logs')
-                .insert(record)
-                .returning(['id', 'changes'])
-                .then(([log]) => {
-                    if (log === undefined) {
-                        this.logger.error('activity log created failed: cannot create activity_log object');
-                    } else {
-                        this.logger.info('activity log created successfully: ', log);
-                    }
-                });
+        '*.*'(payload, sender, eventName) {
+            return this.log(payload, eventName, 0);
         }
     },
 
@@ -117,10 +125,62 @@ module.exports = {
      * Methods
      */
     methods: {
-        difference(params) {
-            let before = params.before;
-            let after = params.after;
-            return jsonDiff.diff(before, after);
+        // params should has:
+        // - object_type
+        // - object_id
+        async regenerate(params) {
+            // TODO using config of object type
+            const logs = await ActivityLog.query().where(params).orderBy('id').limit(10);
+            const checkpoint = logs.findIndex(log => {
+                return log.object;
+            });
+            let before = {};
+            // if find a checkpoint
+            if (checkpoint > -1) before = logs[checkpoint].object;
+            for (let i = checkpoint + 1; i < logs.length; i += 1) {
+                before = jsonpatch.applyPatch(before, logs[i].changes).newDocument;
+            }
+            return {
+                before,
+                version: logs.length > 0 ? logs[logs.length - 1].version : -1
+            };
+        },
+
+        async log(payload, eventName, count) {
+            const [objectType, action] = eventName.split('.');
+            if (this.settings.trackedTypes.includes(objectType)) {
+                let { before, version } = await this.regenerate({
+                    object_type: objectType,
+                    object_id: payload.object.id
+                });
+                const changes = jsonpatch.compare(before, payload.object);
+                version += 1;
+                const activityLog = ActivityLog.fromJson({
+                    actor_type: payload.actor_type,
+                    actor_id: payload.actor_id,
+                    object_type: objectType,
+                    object_id: payload.object.id,
+                    changes: JSON.stringify(changes),
+                    action,
+                    version
+                });
+                // TODO using config of object type
+                if (version % 10 === 0) {
+                    activityLog.object = payload.object;
+                }
+                return activityLog.$query().insert()
+                    .catch(err => {
+                        if (err.message.includes('duplicate key value') && count < 3) {
+                            // retry
+                            setTimeout(() => {
+                                return this.log(payload, eventName, count + 1);
+                            }, 1000);
+                        } else {
+                            this.logger.error(err);
+                        }
+                    });
+            }
+            return Promise.resolve();
         }
     },
 

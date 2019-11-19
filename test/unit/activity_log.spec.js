@@ -2,26 +2,44 @@
 
 const { ServiceBroker } = require('moleculer');
 const ActivityLogService = require('../../services/activity_logs.service');
-const { truncate } = require('../helpers/test_init');
+const { truncate, disconnectDB } = require('../helpers/test_init');
 const moment = require('moment-timezone');
 
-describe("Test 'activity-logs' service", () => {
+describe("Test 'activity-log' service", () => {
     let broker = new ServiceBroker();
     broker.createService(ActivityLogService);
     let tz = 'Asia/Ho_Chi_Minh';
-    beforeAll(() => broker.start());
-    afterAll(() => broker.stop());
+
+    beforeAll(async () => {
+        await truncate();
+        await broker.createService(ActivityLogService);
+        await broker.start();
+    });
+
+    afterAll(async () => {
+        await disconnectDB();
+        await broker.stop();
+    });
 
     // A. Empty params
-    describe('Test activity_log.get with  params', () => {
+    describe('Test activity_log.list with  params', () => {
         beforeAll(() => truncate());
 
         test('get activity logs success with data filter params', async (done) => {
-            await broker.emit('activity.log', { action: 'auth.login', actor_id: 1, actor_type: 'User' });
+            await broker.emit('property.created', {
+                actor_id: 1,
+                actor_type: 'host',
+                object: {
+                    id: 1,
+                    name: {
+                        en: 'Fort'
+                    }
+                }
+            });
 
             // Get activity log
             setTimeout(async () => {
-                const request = await broker.call('activity-logs.get', {
+                const request = await broker.call('activity-log.list', {
                     from: moment.tz(tz).subtract(1, 'days').format(),
                     to: moment.tz(tz).add(7, 'days').format()
                 });
@@ -29,9 +47,18 @@ describe("Test 'activity-logs' service", () => {
                     expect.arrayContaining([
                         expect.objectContaining({
                             id: expect.any(Number),
-                            action: 'auth.login',
+                            action: 'created',
                             actor_id: 1,
-                            actor_type: 'User'
+                            actor_type: 'host',
+                            object_type: 'property',
+                            object_id: 1,
+                            object: expect.objectContaining({
+                                id: 1,
+                                name: {
+                                    en: 'Fort'
+                                }
+                            }),
+                            changes: [{ op: 'add', path: '/id', value: 1 }, { op: 'add', path: '/name', value: { en: 'Fort' } }]
                         })
                     ])
                 );
@@ -42,75 +69,88 @@ describe("Test 'activity-logs' service", () => {
         });
 
         test('create and get activity logs success with auto create changes', async (done) => {
-            await broker.emit('activity.log', {
-                action: 'profile.update',
-                actor_id: '1',
-                actor_type: 'User',
-                object_id: '1',
-                object_type: 'Profile',
-                before: {
-                    description: 'desc 1',
-                    phone: '0987509255',
-                    avatar: '',
-                    date_of_birth: '02/12/1990',
-                    user_id: 1
-                },
-                after: {
-                    description: 'desc 2',
-                    phone: '0389867734',
-                    avatar: 'abc.jpg',
-                    date_of_birth: '05/08/2019',
-                    user_id: 1
+            await broker.emit('property.updated', {
+                actor_id: 1,
+                actor_type: 'host',
+                object: {
+                    id: 1,
+                    name: {
+                        en: 'Citadel'
+                    }
                 }
             });
 
             // Get activity log
 
             setTimeout(async () => {
-                const request = await broker.call('activity-logs.get', {
+                const request = await broker.call('activity-log.list', {
                     from: moment.tz(tz).subtract(1, 'days').format(),
                     to: moment.tz(tz).add(1, 'days').format(),
                     object_id: '1',
-                    object_type: 'Profile',
-                    action: 'profile.update'
+                    object_type: 'property'
                 });
-                expect(request.data).toEqual(
-                    expect.arrayContaining([
-                        expect.objectContaining({
-                            id: expect.any(Number),
-                            action: 'profile.update',
-                            actor_id: 1,
-                            actor_type: 'User',
-                            object_id: 1,
-                            object_type: 'Profile'
-                        })
-                    ])
-                );
-                const changes = request.data[0].changes;
 
-                expect(changes).toEqual(
+                expect(request.data[1]).toEqual(
                     expect.objectContaining({
-                        phone: { __new: '0389867734', __old: '0987509255' },
-                        avatar: { __new: 'abc.jpg', __old: '' },
-                        description: { __new: 'desc 2', __old: 'desc 1' },
-                        date_of_birth: { __new: '05/08/2019', __old: '02/12/1990' }
+                        action: 'updated',
+                        changes: [{
+                            op: 'replace',
+                            path: '/name/en',
+                            value: 'Citadel'
+                        }]
                     })
                 );
-                expect(request.data.length).toEqual(1);
+                expect(request.data.length).toEqual(2);
                 done();
             }, 2000);
         });
 
         test('get activity logs empty with data filter ', async () => {
-            await broker.emit('activity.log', { action: 'auth.register', actor_id: '1', actor_type: 'User' });
+            await broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 5, name: { en: 'Empty' } } });
 
             // Get activity log
-            const request = await broker.call('activity-logs.get', {
+            const request = await broker.call('activity-log.list', {
                 from: moment.tz(tz).add(1, 'days').format(),
                 to: moment.tz(tz).add(7, 'days').format(),
                 actor_id: '2'
             });
             expect(request.data.length).toEqual(0);
+        });
+    });
+
+    describe('Test "activity-log.showLatest action"', () => {
+        beforeAll(() => truncate());
+
+        test('get list of full recent objects', async (done) => {
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 1, name: { en: 'Empty' } } });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 2, name: { en: 'Blank' } } });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 3, name: { en: 'Void' } } });
+            broker.emit('property.updated', { actor_id: '1', actor_type: 'host', object: { id: 1, name: { en: 'Not Empty' } } });
+
+            setTimeout(async () => {
+                const res = await broker.call('activity-log.showLatest', { object_type: 'property', last_modified_at: moment().add(-1, 'day').format() });
+                expect(res).toEqual([
+                    {
+                        id: 1,
+                        name: {
+                            en: 'Not Empty'
+                        }
+                    },
+                    {
+                        id: 2,
+                        name: {
+                            en: 'Blank'
+                        }
+                    },
+                    {
+                        id: 3,
+                        name: {
+                            en: 'Void'
+                        }
+                    }
+                ]);
+                done();
+            }, 2000);
         });
     });
 });
