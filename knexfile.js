@@ -28,7 +28,11 @@ const connection = {
 module.exports = {
     development: {
         ...baseConfig,
-        connection
+        connection,
+        pool: {
+            min: 1,
+            max: 3
+        }
     },
     test: {
         ...baseConfig,
