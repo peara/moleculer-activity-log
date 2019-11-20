@@ -104,7 +104,7 @@ module.exports = {
                 const lastModifiedAt = moment(ctx.params.last_modified_at);
                 return ActivityLog.query()
                     .where({ object_type: ctx.params.object_type })
-                    .whereIn('id', ctx.params.object_ids)
+                    .whereIn('object_id', ctx.params.object_ids)
                     .where('created_at', '>', lastModifiedAt)
                     .distinct('object_id')
                     .pluck('object_id')

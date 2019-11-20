@@ -122,32 +122,32 @@ describe("Test 'activity-log' service", () => {
         beforeAll(() => truncate());
 
         test('get list of full recent objects', async (done) => {
-            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 1, name: { en: 'Empty' } } });
-            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 2, name: { en: 'Blank' } } });
-            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 3, name: { en: 'Void' } } });
-            broker.emit('property.updated', { actor_id: '1', actor_type: 'host', object: { id: 1, name: { en: 'Not Empty' } } });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 5, name: { en: 'Empty' } } });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 6, name: { en: 'Blank' } } });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 7, name: { en: 'Void' } } });
+            broker.emit('property.updated', { actor_id: '1', actor_type: 'host', object: { id: 5, name: { en: 'Not Empty' } } });
 
             setTimeout(async () => {
                 const res = await broker.call('activity-log.showLatest', {
                     object_type: 'property',
                     last_modified_at: moment().add(-1, 'day').format(),
-                    object_ids: [1, 2, 3]
+                    object_ids: [5, 6, 7]
                 });
                 expect(res).toEqual([
                     {
-                        id: 1,
+                        id: 5,
                         name: {
                             en: 'Not Empty'
                         }
                     },
                     {
-                        id: 2,
+                        id: 6,
                         name: {
                             en: 'Blank'
                         }
                     },
                     {
-                        id: 3,
+                        id: 7,
                         name: {
                             en: 'Void'
                         }
