@@ -91,7 +91,7 @@ module.exports = {
                 object_ids: {
                     type: 'array',
                     min: 1,
-                    max: 100,
+                    max: 10,
                     items: {
                         type: 'number',
                         convert: true,
