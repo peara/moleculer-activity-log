@@ -128,7 +128,11 @@ describe("Test 'activity-log' service", () => {
             broker.emit('property.updated', { actor_id: '1', actor_type: 'host', object: { id: 1, name: { en: 'Not Empty' } } });
 
             setTimeout(async () => {
-                const res = await broker.call('activity-log.showLatest', { object_type: 'property', last_modified_at: moment().add(-1, 'day').format() });
+                const res = await broker.call('activity-log.showLatest', {
+                    object_type: 'property',
+                    last_modified_at: moment().add(-1, 'day').format(),
+                    object_ids: [1, 2, 3]
+                });
                 expect(res).toEqual([
                     {
                         id: 1,
