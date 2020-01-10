@@ -15,7 +15,12 @@ module.exports = {
     settings: {
         dateFormat: 'YYYY-MM-DD',
         tz: 'Asia/Ho_Chi_Minh',
-        trackedTypes: ['property']
+        // TODO make this configable by admin
+        trackedTypes: {
+            property: {
+                logAction: 'admin-property.showFullLog'
+            }
+        }
     },
 
     /**
@@ -141,7 +146,8 @@ module.exports = {
         // - object_id
         async regenerate(params) {
             // TODO using config of object type
-            const logs = await ActivityLog.query().where(params).orderBy('id').limit(10);
+            const logs = await ActivityLog.query().where(params).orderBy('id', 'desc').limit(10);
+            _.reverse(logs);
             const checkpoint = logs.findIndex(log => {
                 return log.object;
             });
@@ -159,25 +165,30 @@ module.exports = {
 
         async log(payload, eventName, count) {
             const [objectType, action] = eventName.split('.');
-            if (this.settings.trackedTypes.includes(objectType)) {
+            if (Object.prototype.hasOwnProperty.call(this.settings.trackedTypes, objectType)) {
+                this.logger.info(`Found new update for ${objectType} ${payload.object_id}`);
                 let { before, version } = await this.regenerate({
                     object_type: objectType,
-                    object_id: payload.object.id
+                    object_id: payload.object_id
                 });
-                const changes = jsonpatch.compare(before, payload.object);
+                const current = await this.broker.call(
+                    this.settings.trackedTypes[objectType].logAction,
+                    { id: payload.object_id }
+                );
+                const changes = jsonpatch.compare(before, current);
                 version += 1;
                 const activityLog = ActivityLog.fromJson({
                     actor_type: payload.actor_type,
                     actor_id: payload.actor_id,
                     object_type: objectType,
-                    object_id: payload.object.id,
+                    object_id: payload.object_id,
                     changes: JSON.stringify(changes),
                     action,
                     version
                 });
                 // TODO using config of object type
                 if (version % 10 === 0) {
-                    activityLog.object = payload.object;
+                    activityLog.object = current;
                 }
                 return activityLog.$query().insert()
                     .catch(err => {
