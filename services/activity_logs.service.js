@@ -191,6 +191,12 @@ module.exports = {
                     activityLog.object = current;
                 }
                 return activityLog.$query().insert()
+                    .then(() => {
+                        this.broker.emit('activity-log.created', {
+                            object_type: objectType,
+                            object_id: payload.object_id
+                        });
+                    })
                     .catch(err => {
                         if (err.message.includes('duplicate key value') && count < 3) {
                             // retry

@@ -2,6 +2,8 @@
 
 const { ServiceBroker } = require('moleculer');
 const ActivityLogService = require('../../services/activity_logs.service');
+const MockPropertyService = require('../mocks/property.service.js');
+
 const { truncate, disconnectDB } = require('../helpers/test_init');
 const moment = require('moment-timezone');
 
@@ -12,7 +14,8 @@ describe("Test 'activity-log' service", () => {
 
     beforeAll(async () => {
         await truncate();
-        await broker.createService(ActivityLogService);
+        broker.createService(ActivityLogService);
+        broker.createService(MockPropertyService);
         await broker.start();
     });
 
@@ -29,12 +32,7 @@ describe("Test 'activity-log' service", () => {
             await broker.emit('property.created', {
                 actor_id: 1,
                 actor_type: 'host',
-                object: {
-                    id: 1,
-                    name: {
-                        en: 'Fort'
-                    }
-                }
+                object_id: 1
             });
 
             // Get activity log
@@ -52,12 +50,6 @@ describe("Test 'activity-log' service", () => {
                             actor_type: 'host',
                             object_type: 'property',
                             object_id: 1,
-                            object: expect.objectContaining({
-                                id: 1,
-                                name: {
-                                    en: 'Fort'
-                                }
-                            }),
                             changes: [{ op: 'add', path: '/id', value: 1 }, { op: 'add', path: '/name', value: { en: 'Fort' } }]
                         })
                     ])
@@ -69,15 +61,11 @@ describe("Test 'activity-log' service", () => {
         });
 
         test('create and get activity logs success with auto create changes', async (done) => {
+            await broker.call('admin-property.changeCase', { case: 'update' });
             await broker.emit('property.updated', {
                 actor_id: 1,
                 actor_type: 'host',
-                object: {
-                    id: 1,
-                    name: {
-                        en: 'Citadel'
-                    }
-                }
+                object_id: 1
             });
 
             // Get activity log
@@ -106,7 +94,8 @@ describe("Test 'activity-log' service", () => {
         });
 
         test('get activity logs empty with data filter ', async () => {
-            await broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 5, name: { en: 'Empty' } } });
+            await broker.call('admin-property.changeCase', { case: 'update' });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object_id: 5 });
 
             // Get activity log
             const request = await broker.call('activity-log.list', {
@@ -122,10 +111,10 @@ describe("Test 'activity-log' service", () => {
         beforeAll(() => truncate());
 
         test('get list of full recent objects', async (done) => {
-            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 5, name: { en: 'Empty' } } });
-            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 6, name: { en: 'Blank' } } });
-            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object: { id: 7, name: { en: 'Void' } } });
-            broker.emit('property.updated', { actor_id: '1', actor_type: 'host', object: { id: 5, name: { en: 'Not Empty' } } });
+            await broker.call('admin-property.changeCase', { case: 'list' });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object_id: 5 });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object_id: 6 });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object_id: 7 });
 
             setTimeout(async () => {
                 const res = await broker.call('activity-log.showLatest', {
@@ -137,7 +126,7 @@ describe("Test 'activity-log' service", () => {
                     {
                         id: 5,
                         name: {
-                            en: 'Not Empty'
+                            en: 'Empty'
                         }
                     },
                     {
