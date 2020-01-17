@@ -14,6 +14,7 @@ test-ci:
     - postgres:11.3
     - redis:5
   variables:
+    CACHER: redis://redis:6379
     POSTGRES_DB: activity_log_test
     POSTGRES_USER: activity_log_ci
     POSTGRES_PASSWORD: activity_log_ci
