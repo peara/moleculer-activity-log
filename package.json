@@ -4,6 +4,7 @@
   "description": "My Moleculer microservice",
   "scripts": {
     "dev": "moleculer-runner --repl --hot services",
+    "dev-log": "DEBUG=knex:query moleculer-runner --repl --hot services",
     "start": "moleculer-runner services",
     "ci": "NODE_ENV=ci jest --watch",
     "test": "NODE_ENV=test jest --coverage --runInBand",

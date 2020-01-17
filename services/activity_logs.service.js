@@ -146,21 +146,25 @@ module.exports = {
                 object_ids: {
                     type: 'array',
                     min: 1,
-                    max: 10,
+                    max: 20,
                     items: {
                         type: 'number',
                         convert: true,
                         min: 1
                     }
                 },
-                last_modified_at: 'string'
+                last_modified_at: { type: 'string', optional: true }
             },
             handler(ctx) {
-                const lastModifiedAt = moment(ctx.params.last_modified_at);
                 return ActivityLog.query()
                     .where({ object_type: ctx.params.object_type })
                     .whereIn('object_id', ctx.params.object_ids)
-                    .where('created_at', '>', lastModifiedAt)
+                    .where(query => {
+                        if (ctx.params.last_modified_at) {
+                            return query.where('created_at', '>', moment(ctx.params.last_modified_at));
+                        }
+                        return query;
+                    })
                     .distinct('object_id')
                     .pluck('object_id')
                     .orderBy('object_id')
