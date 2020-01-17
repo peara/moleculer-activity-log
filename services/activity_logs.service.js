@@ -2,6 +2,8 @@
 
 const { ValidationError } = require('moleculer').Errors;
 const lodash = require('lodash');
+const QueueService = require('moleculer-bull');
+const QueueConfig = require('../config/queue');
 const moment = require('moment-timezone');
 const ActivityLog = require('../app/models/activity_log');
 const jsonpatch = require('fast-json-patch');
@@ -9,9 +11,6 @@ const _ = require('lodash');
 
 module.exports = {
     name: 'activity-log',
-    /**
-     * Service settings
-     */
     settings: {
         dateFormat: 'YYYY-MM-DD',
         tz: 'Asia/Ho_Chi_Minh',
@@ -22,10 +21,60 @@ module.exports = {
             }
         }
     },
-
-    /**
-     * Actions
-     */
+    mixins: [QueueService(QueueConfig.url)],
+    queues: {
+        'activity-log.create': {
+            concurrency: 1,
+            async process(job) {
+                const { payload, eventName } = job.data;
+                const [objectType, action] = eventName.split('.');
+                let { before, version } = await this.regenerate({
+                    object_type: objectType,
+                    object_id: payload.object_id
+                });
+                const current = await this.broker.call(
+                    this.settings.trackedTypes[objectType].logAction,
+                    { id: payload.object_id }
+                ).catch(() => undefined);
+                if (current === undefined) {
+                    this.logger.error('Object not found for job:', job.data);
+                    throw new Error('object-not-found');
+                }
+                const changes = jsonpatch.compare(before, current);
+                version += 1;
+                const activityLog = ActivityLog.fromJson({
+                    actor_type: payload.actor_type,
+                    actor_id: payload.actor_id,
+                    object_type: objectType,
+                    object_id: payload.object_id,
+                    changes: JSON.stringify(changes),
+                    action,
+                    version
+                });
+                    // TODO using config of object type
+                if (version % 10 === 0) {
+                    activityLog.object = current;
+                }
+                return activityLog.$query().insert()
+                    .then(() => {
+                        this.broker.emit('activity-log.created', {
+                            object_type: objectType,
+                            object_id: payload.object_id
+                        });
+                    })
+                    .then(() => {
+                        return {
+                            done: true,
+                            id: job.data.id
+                        };
+                    })
+                    .catch(err => {
+                        this.logger.error(err, 'Job:', job.data);
+                        throw err;
+                    });
+            }
+        }
+    },
     actions: {
 
         /**
@@ -133,7 +182,17 @@ module.exports = {
      */
     events: {
         '*.*'(payload, sender, eventName) {
-            return this.log(payload, eventName, 0);
+            const [objectType, action] = eventName.split('.');
+            if (Object.prototype.hasOwnProperty.call(this.settings.trackedTypes, objectType)) {
+                this.logger.info(`Found new update for ${objectType} ${payload.object_id}`);
+                this.createJob('activity-log.create', '', {
+                    payload,
+                    eventName
+                }, {
+                    attempts: 3,
+                    backoff: 1000
+                });
+            }
         }
     },
 
@@ -161,55 +220,8 @@ module.exports = {
                 before,
                 version: logs.length > 0 ? logs[logs.length - 1].version : -1
             };
-        },
-
-        async log(payload, eventName, count) {
-            const [objectType, action] = eventName.split('.');
-            if (Object.prototype.hasOwnProperty.call(this.settings.trackedTypes, objectType)) {
-                this.logger.info(`Found new update for ${objectType} ${payload.object_id}`);
-                let { before, version } = await this.regenerate({
-                    object_type: objectType,
-                    object_id: payload.object_id
-                });
-                const current = await this.broker.call(
-                    this.settings.trackedTypes[objectType].logAction,
-                    { id: payload.object_id }
-                );
-                const changes = jsonpatch.compare(before, current);
-                version += 1;
-                const activityLog = ActivityLog.fromJson({
-                    actor_type: payload.actor_type,
-                    actor_id: payload.actor_id,
-                    object_type: objectType,
-                    object_id: payload.object_id,
-                    changes: JSON.stringify(changes),
-                    action,
-                    version
-                });
-                // TODO using config of object type
-                if (version % 10 === 0) {
-                    activityLog.object = current;
-                }
-                return activityLog.$query().insert()
-                    .then(() => {
-                        this.broker.emit('activity-log.created', {
-                            object_type: objectType,
-                            object_id: payload.object_id
-                        });
-                    })
-                    .catch(err => {
-                        if (err.message.includes('duplicate key value') && count < 3) {
-                            // retry
-                            setTimeout(() => {
-                                return this.log(payload, eventName, count + 1);
-                            }, 1000);
-                        } else {
-                            this.logger.error(err);
-                        }
-                    });
-            }
-            return Promise.resolve();
         }
+
     },
 
     /**

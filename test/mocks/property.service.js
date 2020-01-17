@@ -4,7 +4,8 @@ module.exports = {
     name: 'admin-property',
 
     settings: {
-        case: 'create'
+        case: 'create',
+        retry: 0
     },
 
     actions: {
@@ -14,6 +15,18 @@ module.exports = {
             },
             handler(ctx) {
                 switch (this.settings.case) {
+                case 'retry': {
+                    if (this.settings.retry < 2) {
+                        this.settings.retry += 1;
+                        return Promise.reject(new Error('failed'));
+                    }
+                    return {
+                        id: 10,
+                        name: {
+                            en: 'Retry'
+                        }
+                    };
+                }
                 case 'create': {
                     return {
                         id: 1,

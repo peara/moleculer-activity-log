@@ -1,6 +1,7 @@
 'use strict';
 
 const { ServiceBroker } = require('moleculer');
+const ActivityLog = require('@models/activity_log');
 const ActivityLogService = require('../../services/activity_logs.service');
 const MockPropertyService = require('../mocks/property.service.js');
 
@@ -90,21 +91,39 @@ describe("Test 'activity-log' service", () => {
                 );
                 expect(request.data.length).toEqual(2);
                 done();
-            }, 2000);
+            }, 1000);
         });
 
-        test('get activity logs empty with data filter ', async () => {
+        test('get activity logs empty with data filter ', async (done) => {
             await broker.call('admin-property.changeCase', { case: 'update' });
             broker.emit('property.created', { actor_id: '1', actor_type: 'host', object_id: 5 });
 
+            setTimeout(async () => {
             // Get activity log
-            const request = await broker.call('activity-log.list', {
-                from: moment.tz(tz).add(1, 'days').format(),
-                to: moment.tz(tz).add(7, 'days').format(),
-                actor_id: '2'
-            });
-            expect(request.data.length).toEqual(0);
+                const request = await broker.call('activity-log.list', {
+                    from: moment.tz(tz).add(1, 'days').format(),
+                    to: moment.tz(tz).add(7, 'days').format(),
+                    actor_id: '2'
+                });
+                expect(request.data.length).toEqual(0);
+                done();
+            }, 1000);
         });
+
+        test('activity logs tolerate 3 times retry', async (done) => {
+            await broker.call('admin-property.changeCase', { case: 'retry' });
+            broker.emit('property.created', { actor_id: '1', actor_type: 'host', object_id: 10 });
+
+            setTimeout(async () => {
+                const log = await ActivityLog.query().where({ object_id: 10 }).first();
+                expect(log).toEqual(
+                    expect.objectContaining({
+                        object_id: 10
+                    })
+                );
+                done();
+            }, 5000);
+        }, 10000);
     });
 
     describe('Test "activity-log.showLatest action"', () => {
