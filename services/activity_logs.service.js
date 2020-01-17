@@ -59,7 +59,8 @@ module.exports = {
                     .then(() => {
                         this.broker.emit('activity-log.created', {
                             object_type: objectType,
-                            object_id: payload.object_id
+                            object_id: payload.object_id,
+                            action
                         });
                     })
                     .then(() => {
