@@ -195,7 +195,8 @@ module.exports = {
                     eventName
                 }, {
                     attempts: 3,
-                    backoff: 1000
+                    backoff: 1000,
+                    removeOnComplete: true
                 });
             }
         }
