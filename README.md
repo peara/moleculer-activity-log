@@ -1,7 +1,4 @@
-[![pipeline status](https://gitlab.com/lux-tech/auth-service/badges/dev/pipeline.svg)](https://gitlab.com/lux-tech/auth-service/commits/dev)
-[![coverage report](https://gitlab.com/lux-tech/auth-service/badges/dev/coverage.svg)](https://gitlab.com/lux-tech/auth-service/commits/dev)
-
-# base-service
+# Activity Log Service for Moleculer
 
 ## Build Setup
 
@@ -29,10 +26,10 @@ npm run lint
 
 **Build Docker image**
 ```bash
-$ docker build -t base-service .
+$ docker build -t activity-log-service .
 ```
 
 **Start container**
 ```bash
-$ docker run -d base-service
+$ docker run -d activity-log-service
 ```
