@@ -9,17 +9,10 @@ services:
 
 addons:
   postgresql: "11"
-  apt:
-    packages:
-      - postgresql-11
-      - postgresql-client-11
-      - postgresql-server-dev-11
 
 env:
   jobs:
     - CACHER: redis://localhost:6379
-  global:
-    - PGPORT: 5433
 
 before_install:
   - psql -c 'create database activity_log_test;' -U postgres
