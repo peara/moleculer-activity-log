@@ -12,13 +12,9 @@ addons:
 
 env:
   - CACHE: redis://localhost:6379
-  - POSTGRES_DB: activity_log_test
-  - POSTGRES_USER: postgres
-
-before_script:
-  - psql -c 'create database activity_log_test;' -U postgres
 
 before_install:
+  - psql -c 'create database activity_log_test;' -U postgres
   - npm install
   - npx knex migrate:latest --env ci
   - npm run lint
