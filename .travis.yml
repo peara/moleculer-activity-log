@@ -9,9 +9,13 @@ services:
 
 addons:
   postgresql: "11.3"
+  apt:
+    packages:
+      - postgresql-11
+      - postgresql-client-11
 
 env:
-  - CACHE: redis://localhost:6379
+  - CACHER: redis://localhost:6379
 
 before_install:
   - psql -c 'create database activity_log_test;' -U postgres
