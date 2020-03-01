@@ -16,7 +16,8 @@ addons:
       - postgresql-server-dev-11
 
 env:
-  - CACHER: redis://localhost:6379
+  jobs:
+    - CACHER: redis://localhost:6379
   global:
     - PGPORT: 5432
 
