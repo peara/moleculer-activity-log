@@ -48,7 +48,7 @@ module.exports = {
     ci: {
         ...baseConfig,
         connection: {
-            host: 'postgres',
+            host: 'localhost',
             user: 'postgres',
             password: '',
             database: 'activity_log_test',
