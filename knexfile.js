@@ -52,7 +52,7 @@ module.exports = {
             user: 'postgres',
             password: '',
             database: 'activity_log_test',
-            port: '5432'
+            port: '5433'
         },
         pool: {
             min: 1,
