@@ -248,6 +248,6 @@ module.exports = {
      * Service stopped lifecycle event handler
      */
     stopped() {
-
+        this.getQueue('activity-log.create').close();
     }
 };
