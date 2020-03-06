@@ -1,7 +1,10 @@
 'use strict';
 
-const client = require('../config/elasticsearch');
 const lodash = require('lodash');
+const QueueService = require('moleculer-bull');
+
+const client = require('../config/elasticsearch');
+const QueueConfig = require('../config/queue');
 
 module.exports = {
 
@@ -9,6 +12,36 @@ module.exports = {
 
     settings: {
 
+    },
+
+    mixins: [QueueService(QueueConfig.url)],
+
+    queues: {
+        'elasticsearch.bulk': {
+            concurrency: 5,
+            async process(job) {
+                const params = job.data;
+                const body = params.body.flatMap(doc => [{ index: { _index: params.index, _id: doc.id } }, lodash.omit(doc, ['id'])]);
+                const { body: bulkResponse } = await client.bulk({ refresh: true, body });
+                if (bulkResponse.errors) {
+                    const erroredDocuments = [];
+                    bulkResponse.items.forEach((action, i) => {
+                        const operation = Object.keys(action)[0];
+                        if (action[operation].error) {
+                            erroredDocuments.push({
+                                status: action[operation].status,
+                                error: action[operation].error,
+                                operation: body[i * 2],
+                                document: body[i * 2 + 1]
+                            });
+                        }
+                    });
+                    this.logger.error(erroredDocuments);
+                }
+                const { body: { count: size } } = await client.count({ index: params.index });
+                this.logger.info(`There are ${size} documents on index ${params.index}`);
+            }
+        }
     },
 
     actions: {
@@ -40,19 +73,18 @@ module.exports = {
                     type: 'array',
                     items: {
                         type: 'object',
-                        props: { id: { type: 'string', convert: true } }
+                        props: { id: { type: 'string', optional: true } }
                     }
                 },
                 $$strict: 'remove'
             },
-            handler(ctx) {
-                const { index } = ctx.params;
-                const body = ctx.params.body.flatMap(doc => [{ create: { _index: index, _id: doc.id } }, lodash.omit(doc, ['id'])]);
-                return client.bulk({ refresh: true, body });
+            async handler(ctx) {
+                this.createJob('elasticsearch.bulk', ctx.params, { removeOnComplete: true });
+                return true;
             }
         },
 
-        create: {
+        insert: {
             params: {
                 index: { type: 'string' },
                 id: { type: 'string', convert: true },
@@ -108,16 +140,19 @@ module.exports = {
     },
 
     async started() {
-        const { statusCode } = await client.ping();
-        if (statusCode !== 200) {
+        try {
+            const { statusCode } = await client.ping();
+            if (statusCode === 200) {
+                this.logger.info('Elasticsearch server is ready');
+            } else {
+                throw new Error();
+            }
+        } catch (error) {
             this.logger.error('Can not connect to elasticsearch server');
-            return;
         }
-
-        this.logger.info('Elasticsearch server is ready');
     },
 
     stopped() {
-
+        this.getQueue('elasticsearch.bulk').close();
     }
 };
