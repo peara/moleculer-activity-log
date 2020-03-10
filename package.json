@@ -8,8 +8,10 @@
     "start": "moleculer-runner services",
     "ci": "NODE_ENV=ci jest --watch",
     "test": "NODE_ENV=test jest --coverage --runInBand",
-    "test-ci": "NODE_ENV=ci jest --coverage --forceExit --runInBand",
+    "test-ci": "NODE_ENV=ci ELASTICSEARCH_HOSTS=http://elasticsearch:9200 jest --coverage --forceExit --runInBand",
     "test-inspect": "NODE_ENV=test node --inspect-brk node_modules/.bin/jest --runInBand --detectOpenHandles",
+    "up-elastic": "docker-compose -f docker/dev.docker-compose.yml build && docker-compose -f docker/dev.docker-compose.yml up -d elasticsearch kibana",
+    "up-elastic-log": "docker-compose -f docker/dev.docker-compose.yml build && docker-compose -f docker/dev.docker-compose.yml up elasticsearch kibana",
     "lint": "eslint services app test",
     "lint-fix": "eslint services app test --fix",
     "db": "psql -U super_node -h localhost -d lux_test"
