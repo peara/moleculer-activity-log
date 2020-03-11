@@ -1,68 +1,82 @@
 'use strict';
 
 const lodash = require('lodash');
-const QueueService = require('moleculer-bull');
-
 const client = require('../config/elasticsearch');
-const QueueConfig = require('../config/queue');
 
 module.exports = {
 
     name: 'elasticsearch',
 
     settings: {
-
-    },
-
-    mixins: [QueueService(QueueConfig.url)],
-
-    queues: {
-        'elasticsearch.bulk': {
-            concurrency: 5,
-            async process(job) {
-                const params = job.data;
-                const body = params.body.flatMap(doc => [{ index: { _index: params.index, _id: doc.id } }, lodash.omit(doc, ['id'])]);
-                const { body: bulkResponse } = await client.bulk({ refresh: true, body });
-                if (bulkResponse.errors) {
-                    const erroredDocuments = [];
-                    bulkResponse.items.forEach((action, i) => {
-                        const operation = Object.keys(action)[0];
-                        if (action[operation].error) {
-                            erroredDocuments.push({
-                                status: action[operation].status,
-                                error: action[operation].error,
-                                operation: body[i * 2],
-                                document: body[i * 2 + 1]
-                            });
+        adminPropertiesIndex: {
+            index: 'admin-properties',
+            body: {
+                settings: {
+                    index: {
+                        max_result_window: 20000
+                    },
+                    analysis: {
+                        analyzer: {
+                            std_english: { type: 'english' },
+                            std_cjk: { type: 'cjk' },
+                            std_asciifolding: {
+                                tokenizer: 'standard',
+                                filter: [
+                                    'lowercase',
+                                    'asciifolding'
+                                ]
+                            }
                         }
-                    });
-                    this.logger.error(erroredDocuments);
+                    }
+                },
+                mappings: {
+                    properties: {
+                        name: {
+                            dynamic: 'strict',
+                            properties: {
+                                vi: { type: 'search_as_you_type', analyzer: 'std_asciifolding' },
+                                ja: { type: 'search_as_you_type', analyzer: 'std_cjk' },
+                                en: { type: 'search_as_you_type', analyzer: 'std_english' },
+                                ko: { type: 'search_as_you_type', analyzer: 'std_cjk' }
+                            }
+                        },
+                        status: { type: 'keyword' },
+                        accommodations: {
+                            type: 'nested',
+                            properties: {
+                                booking_type: { type: 'keyword' }
+                            }
+                        },
+                        host: {
+                            properties: {
+                                name: { type: 'text', analyzer: 'std_asciifolding' },
+                                email: { type: 'keyword' }
+                            }
+                        },
+                        address: {
+                            properties: {
+                                province_id: { type: 'keyword' },
+                                district_id: { type: 'keyword' }
+                            }
+                        },
+                        admin_property: {
+                            properties: {
+                                status: { type: 'keyword' }
+                            }
+                        },
+                        joined_at: { type: 'date' },
+                        submitted_at: { type: 'date' },
+                        blocked_at: { type: 'date' }
+                    }
                 }
-                const { body: { count: size } } = await client.count({ index: params.index });
-                this.logger.info(`There are ${size} documents on index ${params.index}`);
             }
         }
     },
 
     actions: {
-        deleteIndex: {
-            params: {
-                index: { type: 'string' },
-                $$strict: 'remove'
-            },
-            handler(ctx) {
-                return client.indices.delete(ctx.params);
-            }
-        },
-
-        createIndex: {
-            params: {
-                index: { type: 'string' },
-                body: { type: 'object' },
-                $$strict: 'remove'
-            },
-            handler(ctx) {
-                return client.indices.create(ctx.params);
+        ping: {
+            handler() {
+                return this.ping();
             }
         },
 
@@ -73,21 +87,24 @@ module.exports = {
                     type: 'array',
                     items: {
                         type: 'object',
-                        props: { id: { type: 'string', optional: true } }
+                        props: {
+                            id: [{ type: 'string' }, { type: 'number', min: 1, integer: true }]
+                        }
                     }
                 },
                 $$strict: 'remove'
             },
-            async handler(ctx) {
-                this.createJob('elasticsearch.bulk', ctx.params, { removeOnComplete: true });
-                return true;
+            handler(ctx) {
+                const { index, body: bodyPayload } = ctx.params;
+                const body = bodyPayload.flatMap(doc => [{ index: { _index: index, _id: doc.id } }, lodash.omit(doc, ['id'])]);
+                return client.bulk({ refresh: true, body });
             }
         },
 
         insert: {
             params: {
                 index: { type: 'string' },
-                id: { type: 'string', convert: true },
+                id: [{ type: 'string' }, { type: 'number', min: 1, integer: true }],
                 body: { type: 'object' },
                 $$strict: 'remove'
             },
@@ -99,7 +116,7 @@ module.exports = {
         get: {
             params: {
                 index: { type: 'string' },
-                id: { type: 'string', convert: true },
+                id: [{ type: 'string' }, { type: 'number', min: 1, integer: true }],
                 $$strict: 'remove'
             },
             handler(ctx) {
@@ -110,7 +127,7 @@ module.exports = {
         update: {
             params: {
                 index: { type: 'string' },
-                id: { type: 'string', convert: true },
+                id: [{ type: 'string' }, { type: 'number', min: 1, integer: true }],
                 body: { type: 'object' },
                 $$strict: 'remove'
             },
@@ -122,37 +139,103 @@ module.exports = {
         delete: {
             params: {
                 index: { type: 'string' },
-                id: { type: 'string', convert: true },
+                id: [{ type: 'string' }, { type: 'number', min: 1, integer: true }],
                 $$strict: 'remove'
             },
             handler(ctx) {
                 return client.delete({ refresh: true, ...ctx.params });
             }
+        },
+
+        updateByQuery: {
+            params: {
+                index: { type: 'string' },
+                body: { type: 'object' },
+                $$strict: 'remove'
+            },
+            handler(ctx) {
+                return client.updateByQuery({ refresh: true, ...ctx.params });
+            }
+        },
+
+        deleteByQuery: {
+            params: {
+                index: { type: 'string' },
+                body: { type: 'object' },
+                $$strict: 'remove'
+            },
+            handler(ctx) {
+                return client.deleteByQuery({ refresh: true, ...ctx.params });
+            }
+        },
+
+        search: {
+            params: {
+                index: { type: 'string' },
+                from: {
+                    type: 'number', integer: true, min: 0, optional: true
+                },
+                size: {
+                    type: 'number', integer: true, min: 1, optional: true
+                },
+                sort: [{ type: 'string', optional: true }, { type: 'array', items: 'string', optional: true }],
+                _source: { type: 'boolean', default: true },
+                body: { type: 'object' },
+                $$strict: 'remove'
+            },
+            handler(ctx) {
+                return client.search(ctx.params);
+            }
         }
     },
 
     methods: {
+        async ping() {
+            try {
+                await client.ping();
+                this.logger.info('Service Elasticsearch connected');
+                return {
+                    status: 'ok'
+                };
+            } catch (err) {
+                this.logger.error('Can not connect to service Elasticsearch ');
+                return {
+                    status: 'error'
+                };
+            }
+        },
 
+        async createIndexIfNotExists(structure) {
+            try {
+                const { body } = await client.indices.exists({ index: structure.index });
+
+                if (!body) {
+                    let res = await client.indices.create({ index: structure.index, body: structure.body });
+                    if (res.statusCode) {
+                        this.logger.info(`Index ${structure.index} was created`);
+                    } else {
+                        throw new Error();
+                    }
+                }
+            } catch (error) {
+                this.logger.error(error);
+            }
+        }
     },
 
     created() {
-        return this.Promise.resolve();
+
     },
 
     async started() {
-        try {
-            const { statusCode } = await client.ping();
-            if (statusCode === 200) {
-                this.logger.info('Elasticsearch server is ready');
-            } else {
-                throw new Error();
-            }
-        } catch (error) {
-            this.logger.error('Can not connect to elasticsearch server');
+        const { status: status } = await this.ping();
+
+        if (status === 'ok') {
+            this.createIndexIfNotExists(this.settings.adminPropertiesIndex);
         }
     },
 
     stopped() {
-        this.getQueue('elasticsearch.bulk').close();
+
     }
 };
