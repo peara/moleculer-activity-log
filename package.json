@@ -10,8 +10,10 @@
     "test": "NODE_ENV=test jest --coverage --runInBand",
     "test-ci": "NODE_ENV=ci ELASTICSEARCH_HOSTS=http://elasticsearch:9200 jest --coverage --forceExit --runInBand",
     "test-inspect": "NODE_ENV=test node --inspect-brk node_modules/.bin/jest --runInBand --detectOpenHandles",
-    "up-elastic": "docker-compose -f docker/dev.docker-compose.yml build && docker-compose -f docker/dev.docker-compose.yml up -d elasticsearch kibana",
-    "up-elastic-log": "docker-compose -f docker/dev.docker-compose.yml build && docker-compose -f docker/dev.docker-compose.yml up elasticsearch kibana",
+    "dc-build": "docker-compose -f docker/dev.docker-compose.yml build",
+    "up-elastic": "docker-compose -f docker/dev.docker-compose.yml up -d elasticsearch",
+    "up-kibana": "docker-compose -f docker/dev.docker-compose.yml up -d kibana",
+    "stop-elastic": "docker-compose -f docker/dev.docker-compose.yml stop kibana elasticsearch",
     "lint": "eslint services app test",
     "lint-fix": "eslint services app test --fix",
     "db": "psql -U super_node -h localhost -d lux_test"

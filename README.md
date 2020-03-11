@@ -9,6 +9,16 @@
 # Install dependencies
 npm install
 
+# Start elasticsearch server (wait about 5s to start it, can use `docker logs` or `docker attach` to inspect)
+npm run dc-build
+npm run up-elastic
+
+# Start kibana (wait about 15s to start it, can use `docker logs` or `docker attach` to inspect)
+npm run up-kibana
+
+# Stop elasticsearch server
+npm run stop-elastic
+
 # Start developing with REPL
 npm run dev
 
