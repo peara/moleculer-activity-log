@@ -1,7 +1,5 @@
 'use strict';
 
-const moment = require('moment-timezone');
-
 const EventLogs = require('../app/models/event_logs');
 
 module.exports = {
@@ -33,40 +31,6 @@ module.exports = {
                     }
                 }
             });
-        },
-        // eslint-disable-next-line no-unused-vars
-        'property.*'(payload, sender, eventName) {
-            let params = {
-                index: 'admin-properties',
-                id: `${payload.object_id}`,
-                body: {
-                    doc: {}
-                }
-            };
-
-            switch (JSON.stringify([payload.changes.status.before, payload.changes.status.after])) {
-            case JSON.stringify(['unverified', 'verifying']):
-                params.body.doc = {
-                    submitted_at: moment()
-                };
-                break;
-            case JSON.stringify(['verifying', 'listed']):
-                params.body.doc = {
-                    joined_at: moment()
-                };
-                break;
-            case JSON.stringify(['listed', 'blocked']):
-                params.body.doc = {
-                    blocked_at: moment()
-                };
-                break;
-            default:
-                break;
-            }
-
-            if (params.body.doc !== {}) {
-                this.broker.call('elasticsearch.update', params);
-            }
         }
     },
 

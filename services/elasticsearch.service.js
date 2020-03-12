@@ -105,7 +105,7 @@ module.exports = {
             }
         },
 
-        insert: {
+        create: {
             params: {
                 index: { type: 'string' },
                 id: [{ type: 'string' }, { type: 'number', min: 1, integer: true }],
