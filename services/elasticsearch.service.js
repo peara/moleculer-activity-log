@@ -94,10 +94,13 @@ module.exports = {
                 },
                 $$strict: 'remove'
             },
-            handler(ctx) {
+            async handler(ctx) {
+                this.logger.info(`Starting action bulk with params: ${ctx.params}`);
                 const { index, body: bodyPayload } = ctx.params;
                 const body = bodyPayload.flatMap(doc => [{ index: { _index: index, _id: doc.id } }, lodash.omit(doc, ['id'])]);
-                return client.bulk({ refresh: true, body });
+                let res = await client.bulk({ refresh: true, body });
+                this.logger.info(`Result after bulk: ${res}`);
+                return res;
             }
         },
 
