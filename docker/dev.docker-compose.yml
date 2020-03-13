@@ -10,7 +10,7 @@ services:
     networks:
       dev_network:
   elasticsearch:
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.6.1
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
       container_name: elasticsearch
       environment:
         - node.name=elasticsearch
@@ -27,7 +27,7 @@ services:
         - 9200:9200
   kibana:
     container_name: kibana
-    image: docker.elastic.co/kibana/kibana:7.6.1
+    image: docker.elastic.co/kibana/kibana:7.6.0
     ports:
       - 5601:5601
 networks:
