@@ -29,7 +29,7 @@ test-ci:
     - curl "http://elasticsearch:9200/_cat/health"
     - npm run test-ci
 
-deploy-staging:
+deploy:
   stage: deploy
   tags:
     - runner-deploy
@@ -44,3 +44,19 @@ deploy-staging:
     - /home/gitlab-runner/staging-scripts/deploy.sh
   only:
     - dev
+
+deploy-staging:
+  stage: deploy
+  tags:
+    - runner-deploy
+  variables:
+    IMAGE_NAME: activity-log-service
+    GIT_STRATEGY: clone
+  script:
+    - docker build -t $IMAGE_NAME .
+    - cat "$GCLOUD_SERVICE_KEY" | docker login -u _json_key --password-stdin https://asia.gcr.io
+    - docker tag $IMAGE_NAME asia.gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME:latest
+    - docker push asia.gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME:latest
+    - /home/gitlab-runner/staging-scripts/deploy-staging.sh
+  only:
+    - staging
