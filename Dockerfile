@@ -10,5 +10,4 @@ RUN npm i --production
 
 COPY . .
 
-RUN chmod +x docker/entrypoint.sh
 CMD docker/entrypoint.sh
