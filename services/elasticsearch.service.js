@@ -183,7 +183,7 @@ module.exports = {
                     type: 'number', integer: true, min: 1, optional: true
                 },
                 sort: [{ type: 'string', optional: true }, { type: 'array', items: 'string', optional: true }],
-                _source: { type: 'boolean', default: true },
+                _source: { type: 'boolean', optional: true },
                 body: { type: 'object' },
                 $$strict: 'remove'
             },
