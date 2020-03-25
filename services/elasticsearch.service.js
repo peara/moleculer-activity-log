@@ -12,9 +12,6 @@ module.exports = {
             index: 'admin-properties',
             body: {
                 settings: {
-                    index: {
-                        max_result_window: 20000
-                    },
                     analysis: {
                         analyzer: {
                             std_english: { type: 'english' },
