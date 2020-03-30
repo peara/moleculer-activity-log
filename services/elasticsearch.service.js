@@ -95,7 +95,7 @@ module.exports = {
                 const { index, body: bodyPayload } = ctx.params;
                 let body = lodash.flatMap(
                     bodyPayload,
-                    doc => [{ index: { _index: index, _id: doc.id } }, lodash.omit(doc, ['id'])]
+                    doc => [{ update: { _index: index, _id: doc.id } }, { doc: lodash.omit(doc, ['id']), doc_as_upsert: true }]
                 );
                 let res = await client.bulk({ refresh: true, body });
                 return res;
