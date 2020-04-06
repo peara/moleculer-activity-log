@@ -12,9 +12,6 @@ module.exports = {
             index: 'admin-properties',
             body: {
                 settings: {
-                    index: {
-                        max_result_window: 20000
-                    },
                     analysis: {
                         analyzer: {
                             std_english: { type: 'english' },
@@ -66,7 +63,8 @@ module.exports = {
                         },
                         joined_at: { type: 'date' },
                         submitted_at: { type: 'date' },
-                        blocked_at: { type: 'date' }
+                        blocked_at: { type: 'date' },
+                        deactivated_at: { type: 'date' }
                     }
                 }
             }
@@ -98,7 +96,7 @@ module.exports = {
                 const { index, body: bodyPayload } = ctx.params;
                 let body = lodash.flatMap(
                     bodyPayload,
-                    doc => [{ index: { _index: index, _id: doc.id } }, lodash.omit(doc, ['id'])]
+                    doc => [{ update: { _index: index, _id: doc.id } }, { doc: lodash.omit(doc, ['id']), doc_as_upsert: true }]
                 );
                 let res = await client.bulk({ refresh: true, body });
                 return res;
@@ -183,7 +181,7 @@ module.exports = {
                     type: 'number', integer: true, min: 1, optional: true
                 },
                 sort: [{ type: 'string', optional: true }, { type: 'array', items: 'string', optional: true }],
-                _source: { type: 'boolean', default: true },
+                _source: { type: 'boolean', optional: true },
                 body: { type: 'object' },
                 $$strict: 'remove'
             },
