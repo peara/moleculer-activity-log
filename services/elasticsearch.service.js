@@ -63,7 +63,8 @@ module.exports = {
                         },
                         joined_at: { type: 'date' },
                         submitted_at: { type: 'date' },
-                        blocked_at: { type: 'date' }
+                        blocked_at: { type: 'date' },
+                        deactivated_at: { type: 'date' }
                     }
                 }
             }
