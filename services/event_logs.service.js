@@ -1,6 +1,8 @@
 'use strict';
 
 const EventLogs = require('../app/models/event_logs');
+const lodash = require('lodash');
+const { raw } = require('objection');
 
 module.exports = {
     name: 'event-logs',
@@ -9,7 +11,22 @@ module.exports = {
      * Actions
      */
     actions: {
+        resolveDeactivated: {
+            params: {
+                property_ids: { type: 'array', items: { type: 'number', integer: true, min: 1 } }
+            },
+            async handler(ctx) {
+                const eventsLogs = await EventLogs
+                    .query()
+                    .select(raw('distinct on (object_id) object_id, actor_id, actor_type, note, created_at'))
+                    .whereIn('object_id', ctx.params.property_ids)
+                    .where({ event_name: 'property.deactivated' })
+                    .orderBy(['object_id', { column: 'created_at', order: 'desc' }]);
 
+                const keyByEventsLogs = lodash.keyBy(eventsLogs, 'object_id');
+                return ctx.params.property_ids.map(id => keyByEventsLogs[id]);
+            }
+        }
     },
 
     /**
@@ -30,6 +47,17 @@ module.exports = {
                         after: payload.booking.status
                     }
                 }
+            });
+        },
+        'property.*'(payload, sender, eventName) {
+            this.createEventLog({
+                actor_id: payload.actor_id,
+                actor_type: payload.actor_type,
+                object_id: payload.object_id,
+                object_type: payload.object_type || 'property',
+                event_name: eventName,
+                note: payload.note || null,
+                changes: payload.changes || {}
             });
         }
     },
