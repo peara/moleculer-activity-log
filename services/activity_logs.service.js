@@ -29,7 +29,6 @@ module.exports = {
             concurrency: 1,
             async process(job) {
                 const { payload, eventName, logType } = job.data;
-                console.log('Logging', eventName, logType);
                 const [objectType, action] = eventName.split('.');
                 if (logType === 'object') {
                     let { before, version } = await this.regenerate({
@@ -76,7 +75,6 @@ module.exports = {
                         });
                 }
                 if (logType === 'simple') {
-                    console.log('Logging calendar', payload);
                     if (objectType === 'calendar') {
                         payload.object_id = payload.object.accommodation_id;
                     }
