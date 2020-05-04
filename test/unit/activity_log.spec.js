@@ -165,4 +165,35 @@ describe("Test 'activity-log' service", () => {
             }, 2000);
         });
     });
+
+    describe('Test "activity-log.create"', () => {
+        beforeAll(() => truncate());
+
+        test('create simple log', async (done) => {
+            broker.emit('calendar.lock', {
+                actor_id: 1,
+                actor_type: 'host',
+                object: {
+                    accommodation_id: 100,
+                    check_in: '2020-01-05',
+                    check_out: '2020-01-07',
+                    quantity: 1
+                }
+            });
+
+            setTimeout(async () => {
+                const res = await ActivityLog.query().where({ object_type: 'calendar' }).first();
+                expect(res).toEqual(
+                    expect.objectContaining({
+                        action: 'lock',
+                        changes: expect.objectContaining({
+                            accommodation_id: 100
+                        }),
+                        object_type: 'calendar'
+                    })
+                );
+                done();
+            }, 2000);
+        });
+    });
 });
