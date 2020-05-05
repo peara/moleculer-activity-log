@@ -53,6 +53,7 @@ module.exports = {
                         throw new Error('object-not-found');
                     }
                     const changes = jsonpatch.compare(before, current);
+                    if (changes.length === 0) return true;
                     version += 1;
                     const activityLog = ActivityLog.fromJson({
                         actor_type: payload.actor_type,
