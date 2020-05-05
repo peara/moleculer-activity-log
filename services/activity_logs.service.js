@@ -17,8 +17,17 @@ module.exports = {
         // TODO make this configable by admin
         trackedTypes: {
             property: {
-                logAction: 'admin-property.showFullLog'
-            }
+                logAction: 'admin-property.showFullLog',
+                logType: 'object',
+                idName: 'id'
+            },
+            calendar: { logType: 'simple' },
+            'accommodation-prices': {
+                logAction: 'host-price.show',
+                logType: 'object',
+                idName: 'accommodation_id'
+            },
+            'custom-prices': { logType: 'simple' }
         }
     },
     mixins: [QueueService(QueueConfig.url)],
@@ -26,53 +35,73 @@ module.exports = {
         'activity-log.create': {
             concurrency: 1,
             async process(job) {
-                const { payload, eventName } = job.data;
+                const { payload, eventName, logType } = job.data;
                 const [objectType, action] = eventName.split('.');
-                let { before, version } = await this.regenerate({
-                    object_type: objectType,
-                    object_id: payload.object_id
-                });
-                const current = await this.broker.call(
-                    this.settings.trackedTypes[objectType].logAction,
-                    { id: payload.object_id }
-                ).catch(() => undefined);
-                if (current === undefined) {
-                    this.logger.error('Object not found for job:', job.data);
-                    throw new Error('object-not-found');
-                }
-                const changes = jsonpatch.compare(before, current);
-                version += 1;
-                const activityLog = ActivityLog.fromJson({
-                    actor_type: payload.actor_type,
-                    actor_id: payload.actor_id,
-                    object_type: objectType,
-                    object_id: payload.object_id,
-                    changes: JSON.stringify(changes),
-                    action,
-                    version
-                });
+                if (logType === 'object') {
+                    let { before, version } = await this.regenerate({
+                        object_type: objectType,
+                        object_id: payload.object_id
+                    });
+                    const params = {};
+                    params[this.settings.trackedTypes[objectType].idName || 'id'] = payload.object_id;
+                    const current = await this.broker.call(
+                        this.settings.trackedTypes[objectType].logAction,
+                        params
+                    ).catch(() => undefined);
+                    if (current === undefined) {
+                        this.logger.error('Object not found for job:', job.data);
+                        throw new Error('object-not-found');
+                    }
+                    const changes = jsonpatch.compare(before, current);
+                    if (changes.length === 0) return true;
+                    version += 1;
+                    const activityLog = ActivityLog.fromJson({
+                        actor_type: payload.actor_type,
+                        actor_id: payload.actor_id,
+                        object_type: objectType,
+                        object_id: payload.object_id,
+                        changes: JSON.stringify(changes),
+                        action,
+                        version
+                    });
                     // TODO using config of object type
-                if (version % 10 === 0) {
-                    activityLog.object = current;
-                }
-                return activityLog.$query().insert()
-                    .then(() => {
-                        this.broker.emit('activity-log.created', {
-                            object_type: objectType,
-                            object_id: payload.object_id,
-                            action
+                    if (version % 10 === 0) {
+                        activityLog.object = current;
+                    }
+                    return activityLog.$query().insert()
+                        .then(() => {
+                            this.broker.emit('activity-log.created', {
+                                object_type: objectType,
+                                object_id: payload.object_id,
+                                action
+                            });
+                        })
+                        .then(() => {
+                            return Promise.resolve();
+                        })
+                        .catch(err => {
+                            this.logger.error(err, 'Job:', job.data);
+                            throw err;
                         });
-                    })
-                    .then(() => {
-                        return {
-                            done: true,
-                            id: job.data.id
-                        };
-                    })
-                    .catch(err => {
+                }
+                if (logType === 'simple') {
+                    if (objectType === 'calendar') {
+                        payload.object_id = payload.object.accommodation_id;
+                    }
+                    return ActivityLog.query().insert({
+                        actor_type: payload.actor_type,
+                        actor_id: payload.actor_id,
+                        object_type: objectType,
+                        object_id: payload.object_id,
+                        changes: payload.object,
+                        action,
+                        version: Math.floor((new Date()).getTime() / 1000)
+                    }).catch(err => {
                         this.logger.error(err, 'Job:', job.data);
                         throw err;
                     });
+                }
+                return Promise.resolve();
             }
         }
     },
@@ -192,7 +221,8 @@ module.exports = {
                 this.logger.info(`Found new update for ${objectType} ${payload.object_id}`);
                 this.createJob('activity-log.create', '', {
                     payload,
-                    eventName
+                    eventName,
+                    logType: this.settings.trackedTypes[objectType].logType
                 }, {
                     attempts: 3,
                     backoff: 1000,
