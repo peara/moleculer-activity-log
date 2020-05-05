@@ -18,9 +18,16 @@ module.exports = {
         trackedTypes: {
             property: {
                 logAction: 'admin-property.showFullLog',
-                logType: 'object'
+                logType: 'object',
+                idName: 'id'
             },
-            calendar: { logType: 'simple' }
+            calendar: { logType: 'simple' },
+            'accommodation-prices': {
+                logAction: 'host-price.show',
+                logType: 'object',
+                idName: 'accommodation_id'
+            },
+            'custom-prices': { logType: 'simple' }
         }
     },
     mixins: [QueueService(QueueConfig.url)],
@@ -35,9 +42,11 @@ module.exports = {
                         object_type: objectType,
                         object_id: payload.object_id
                     });
+                    const params = {};
+                    params[this.settings.trackedTypes[objectType].idName || 'id'] = payload.object_id;
                     const current = await this.broker.call(
                         this.settings.trackedTypes[objectType].logAction,
-                        { id: payload.object_id }
+                        params
                     ).catch(() => undefined);
                     if (current === undefined) {
                         this.logger.error('Object not found for job:', job.data);
