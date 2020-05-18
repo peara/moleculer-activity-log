@@ -75,11 +75,11 @@ describe("Test 'activity-log' service", () => {
                 const request = await broker.call('activity-log.list', {
                     from: moment.tz(tz).subtract(1, 'days').format(),
                     to: moment.tz(tz).add(1, 'days').format(),
-                    object_id: '1',
+                    object_id: 1,
                     object_type: 'property'
                 });
 
-                expect(request.data[1]).toEqual(
+                expect(request.data[0]).toEqual(
                     expect.objectContaining({
                         action: 'updated',
                         changes: [{
@@ -103,7 +103,7 @@ describe("Test 'activity-log' service", () => {
                 const request = await broker.call('activity-log.list', {
                     from: moment.tz(tz).add(1, 'days').format(),
                     to: moment.tz(tz).add(7, 'days').format(),
-                    actor_id: '2'
+                    actor_id: 2
                 });
                 expect(request.data.length).toEqual(0);
                 done();

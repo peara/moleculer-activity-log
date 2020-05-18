@@ -1,6 +1,6 @@
 'use strict';
 
-const { ValidationError } = require('moleculer').Errors;
+const { ValidationError, MoleculerError } = require('moleculer').Errors;
 const lodash = require('lodash');
 const QueueService = require('moleculer-bull');
 const QueueConfig = require('../config/queue');
@@ -122,13 +122,13 @@ module.exports = {
             params: {
                 action: { type: 'string', optional: true },
                 object_type: { type: 'string', optional: true },
-                object_id: { type: 'string', optional: true },
-                actor_id: { type: 'string', optional: true },
+                object_id: { type: 'number', optional: true },
+                actor_id: { type: 'number', optional: true },
                 actor_type: { type: 'string', optional: true },
                 from: { type: 'string' },
                 to: { type: 'string' },
                 page: {
-                    type: 'string', integer: true, positive: true, optional: true
+                    type: 'number', integer: true, positive: true, optional: true
                 },
                 per_page: {
                     type: 'number', integer: true, positive: true, optional: true
@@ -165,7 +165,37 @@ module.exports = {
                     .where(filters)
                     .where('created_at', '>=', from)
                     .where('created_at', '<=', to)
+                    .orderBy('created_at', 'desc')
                     .page(page, perPage);
+            }
+        },
+
+        showLatestByVersion: {
+            params: {
+                object_type: 'string',
+                object_id: 'number',
+                version: 'number'
+            },
+            async handler(ctx) {
+                if (_.get(this.settings.trackedTypes, `${ctx.params.object_type}.logType`) !== 'object') {
+                    throw new ValidationError('object-type-invalid', null, [], []);
+                }
+
+                const id = await ActivityLog.query()
+                    .findOne(ctx.params)
+                    .orderBy('object_id')
+                    .distinct('object_id')
+                    .pluck('object_id');
+
+                if (!id) {
+                    throw new MoleculerError('log-not-found', 400);
+                }
+
+                return this.regenerate({
+                    object_type: ctx.params.object_type,
+                    object_id: id,
+                    version: ctx.params.version
+                });
             }
         },
 
@@ -241,7 +271,17 @@ module.exports = {
         // - object_id
         async regenerate(params) {
             // TODO using config of object type
-            const logs = await ActivityLog.query().where(params).orderBy('id', 'desc').limit(10);
+            const logs = await ActivityLog
+                .query()
+                .where(query => {
+                    if (params.version) {
+                        return query.where('version', '<=', params.version);
+                    }
+                    return query;
+                })
+                .where({ object_id: params.object_id, object_type: params.object_type })
+                .orderBy('id', 'desc')
+                .limit(10);
             _.reverse(logs);
             const checkpoint = logs.findIndex(log => {
                 return log.object;
