@@ -95,7 +95,7 @@ module.exports = {
                         object_id: payload.object_id,
                         changes: payload.object,
                         action,
-                        version: Math.floor((new Date()).getTime() / 1000)
+                        version: (new Date()).getTime()
                     }).catch(err => {
                         this.logger.error(err, 'Job:', job.data);
                         throw err;
