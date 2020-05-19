@@ -294,7 +294,7 @@ module.exports = {
             }
             return {
                 before,
-                version: logs.length > 0 ? logs[logs.length - 1].version : -1
+                version: logs.length > 0 ? Number.parseInt(logs[logs.length - 1].version, 10) : -1
             };
         }
 
