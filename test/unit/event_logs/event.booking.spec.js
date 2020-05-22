@@ -1,9 +1,10 @@
 'use strict';
 
 const { ServiceBroker } = require('moleculer');
-const { truncate, disconnectDB } = require('../helpers/test_init');
-const EventLogs = require('../../app/models/event_logs');
-const EventLogsService = require('../../services/event_logs.service');
+const knex = require('../../../config/database');
+const { truncate, disconnectDB } = require('../../helpers/test_init')(knex);
+const EventLogs = require('../../../app/models/event_logs');
+const EventLogsService = require('../../../services/event_logs.service');
 
 describe("Test 'event-logs' service", () => {
     let broker = new ServiceBroker();
@@ -24,7 +25,7 @@ describe("Test 'event-logs' service", () => {
     ];
 
     let bookingStatusTest = (status) => {
-        describe("Test 'booking.event'", () => {
+        describe("Test event 'booking.*'", () => {
             beforeAll(async () => {
                 await truncate();
             });

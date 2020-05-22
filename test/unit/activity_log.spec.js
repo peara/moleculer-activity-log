@@ -5,7 +5,8 @@ const ActivityLog = require('@models/activity_log');
 const ActivityLogService = require('../../services/activity_logs.service');
 const MockPropertyService = require('../mocks/property.service.js');
 
-const { truncate, disconnectDB } = require('../helpers/test_init');
+const knex = require('../../config/database');
+const { truncate, disconnectDB } = require('../helpers/test_init')(knex);
 const moment = require('moment-timezone');
 
 describe("Test 'activity-log' service", () => {
