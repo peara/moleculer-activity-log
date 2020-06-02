@@ -188,6 +188,17 @@ module.exports = {
             handler(ctx) {
                 return client.search(ctx.params);
             }
+        },
+
+        count: {
+            params: {
+                index: { type: 'string' },
+                body: { type: 'object' },
+                $$strict: 'remove'
+            },
+            handler(ctx) {
+                return client.count(ctx.params);
+            }
         }
     },
 
