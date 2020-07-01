@@ -80,53 +80,30 @@ module.exports = {
                             vietnamese: {
                                 type: 'custom',
                                 tokenizer: 'standard',
-                                filter: [
-                                    'lowercase'
-                                ]
+                                filter: ['lowercase', 'synonym_vi', 'unique']
                             },
                             folding_vietnamese: {
                                 type: 'custom',
                                 tokenizer: 'standard',
-                                filter: [
-                                    'lowercase',
-                                    'asciifolding'
-                                ]
+                                filter: ['lowercase', 'asciifolding', 'unique']
                             },
                             custom_english: {
                                 tokenizer: 'standard',
-                                filter: [
-                                    'english_possessive_stemmer',
-                                    'lowercase',
-                                    'english_keywords',
-                                    'english_stemmer'
-                                ]
+                                filter: ['english_possessive_stemmer', 'lowercase', 'english_keywords', 'english_stemmer', 'unique']
                             },
                             shingle_vietnamese: {
                                 type: 'custom',
                                 tokenizer: 'standard',
-                                filter: [
-                                    'lowercase',
-                                    'shingle'
-                                ]
+                                filter: ['lowercase', 'synonym_vi', 'shingle', 'unique']
                             },
                             shingle_folding_vietnamese: {
                                 type: 'custom',
                                 tokenizer: 'standard',
-                                filter: [
-                                    'lowercase',
-                                    'asciifolding',
-                                    'shingle'
-                                ]
+                                filter: ['lowercase', 'asciifolding', 'shingle', 'unique']
                             },
                             shingle_custom_english: {
                                 tokenizer: 'standard',
-                                filter: [
-                                    'english_possessive_stemmer',
-                                    'lowercase',
-                                    'english_keywords',
-                                    'english_stemmer',
-                                    'shingle'
-                                ]
+                                filter: ['english_possessive_stemmer', 'lowercase', 'english_keywords', 'english_stemmer', 'shingle', 'unique']
                             }
                         },
                         filter: {
@@ -136,9 +113,7 @@ module.exports = {
                             },
                             english_keywords: {
                                 type: 'keyword_marker',
-                                keywords: [
-                                    'example'
-                                ]
+                                keywords: ['example']
                             },
                             english_stemmer: {
                                 type: 'stemmer',
@@ -149,6 +124,10 @@ module.exports = {
                                 min_shingle_size: 2,
                                 max_shingle_size: 3,
                                 output_unigrams: false
+                            },
+                            synonym_vi: {
+                                type: 'synonym',
+                                synonyms_path: 'suggestion/synonym.txt'
                             }
                         }
                     }
@@ -156,58 +135,31 @@ module.exports = {
                 mappings: {
                     dynamic: false,
                     properties: {
-                        original_id: {
-                            type: 'keyword'
-                        },
+                        original_id: { type: 'keyword' },
                         name: {
                             properties: {
                                 vi: {
                                     type: 'text',
                                     analyzer: 'vietnamese',
-                                    boost: 0.8,
                                     fields: {
-                                        shingle: {
-                                            type: 'text',
-                                            analyzer: 'shingle_vietnamese',
-                                            boost: 1.2
-                                        },
-                                        folding: {
-                                            type: 'text',
-                                            analyzer: 'folding_vietnamese',
-                                            boost: 0.5
-                                        },
-                                        shingle_folding: {
-                                            type: 'text',
-                                            analyzer: 'shingle_folding_vietnamese',
-                                            boost: 0.8
-                                        }
+                                        shingle: { type: 'text', analyzer: 'shingle_vietnamese' },
+                                        folding: { type: 'text', analyzer: 'folding_vietnamese' },
+                                        shingle_folding: { type: 'text', analyzer: 'shingle_folding_vietnamese' }
                                     }
                                 },
                                 en: {
                                     type: 'text',
                                     analyzer: 'custom_english',
-                                    boost: 0.8,
                                     fields: {
-                                        shingle: {
-                                            type: 'text',
-                                            analyzer: 'shingle_custom_english',
-                                            boost: 1
-                                        }
+                                        shingle: { type: 'text', analyzer: 'shingle_custom_english' }
                                     }
                                 }
                             },
                             dynamic: false
                         },
-                        count: {
-                            type: 'integer'
-                        },
-                        display_text: {
-                            type: 'object',
-                            enabled: false
-                        },
-                        type: {
-                            type: 'keyword'
-                        }
+                        count: { type: 'integer' },
+                        display_text: { type: 'object', enabled: false },
+                        type: { type: 'keyword' }
                     }
                 }
             }
