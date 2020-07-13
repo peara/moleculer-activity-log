@@ -163,6 +163,142 @@ module.exports = {
                     }
                 }
             }
+        },
+        clientPropertiesIndex: {
+            index: 'client-properties',
+            body: {
+                settings: {
+                    number_of_shards: 3,
+                    number_of_replicas: 2
+                },
+                mappings: {
+                    properties: {
+                        name: {
+                            type: 'object',
+                            enabled: false
+                        },
+                        cover_image: {
+                            type: 'object',
+                            enabled: false
+                        },
+                        facilities: {
+                            type: 'keyword'
+                        },
+                        cancel_policy: {
+                            type: 'keyword'
+                        },
+                        property_type: {
+                            type: 'keyword'
+                        },
+                        address: {
+                            dynamic: false,
+                            properties: {
+                                ward: {
+                                    dynamic: false,
+                                    properties: {
+                                        id: {
+                                            type: 'keyword'
+                                        },
+                                        name: {
+                                            type: 'object',
+                                            enabled: false
+                                        }
+                                    }
+                                },
+                                district: {
+                                    dynamic: false,
+                                    properties: {
+                                        id: {
+                                            type: 'keyword'
+                                        },
+                                        name: {
+                                            type: 'object',
+                                            enabled: false
+                                        }
+                                    }
+                                },
+                                province: {
+                                    dynamic: false,
+                                    properties: {
+                                        id: {
+                                            type: 'keyword'
+                                        },
+                                        name: {
+                                            type: 'object',
+                                            enabled: false
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        accommodations: {
+                            type: 'nested',
+                            properties: {
+                                id: {
+                                    type: 'keyword'
+                                },
+                                booking_type: {
+                                    type: 'keyword'
+                                },
+                                amenities: {
+                                    type: 'keyword'
+                                },
+                                reviews: {
+                                    type: 'object',
+                                    enabled: false
+                                },
+                                room_infomation: {
+                                    properties: {
+                                        total_of_bedroom: {
+                                            type: 'short'
+                                        },
+                                        total_of_bathroom: {
+                                            type: 'short'
+                                        },
+                                        total_of_bed: {
+                                            type: 'short'
+                                        }
+                                    }
+                                },
+                                calendar: {
+                                    type: 'nested',
+                                    properties: {
+                                        checkin: {
+                                            type: 'date'
+                                        },
+                                        checkout: {
+                                            type: 'date'
+                                        }
+                                    }
+                                },
+                                price: {
+                                    properties: {
+                                        discount: {
+                                            type: 'byte'
+                                        },
+                                        price: {
+                                            type: 'double'
+                                        },
+                                        occupancy_information: {
+                                            properties: {
+                                                number_of_adults: {
+                                                    type: 'short'
+                                                },
+                                                number_of_children: {
+                                                    type: 'short'
+                                                },
+                                                number_of_infants: {
+                                                    type: 'short'
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
 
@@ -341,6 +477,7 @@ module.exports = {
         if (status === 'ok') {
             this.createIndexIfNotExists(this.settings.adminPropertiesIndex);
             this.createIndexIfNotExists(this.settings.clientSearchIndex);
+            this.createIndexIfNotExists(this.settings.clientPropertiesIndex);
         }
     },
 
