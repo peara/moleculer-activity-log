@@ -247,7 +247,7 @@ module.exports = {
                                     type: 'object',
                                     enabled: false
                                 },
-                                room_infomation: {
+                                room_information: {
                                     properties: {
                                         total_of_bedroom: {
                                             type: 'short'
