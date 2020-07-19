@@ -34,7 +34,7 @@
     "fast-json-patch": "^3.0.0-1",
     "ioredis": "^3.2.2",
     "knex": "^0.19.5",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.19",
     "moleculer": "^0.13.0",
     "moleculer-bull": "^0.2.5",
     "moment": "^2.24.0",
