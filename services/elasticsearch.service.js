@@ -190,6 +190,9 @@ module.exports = {
                         property_type: {
                             type: 'keyword'
                         },
+                        night_stay: {
+                            type: 'integer_range'
+                        },
                         address: {
                             dynamic: false,
                             properties: {
@@ -260,7 +263,10 @@ module.exports = {
                                         }
                                     }
                                 },
-                                calendar: {
+                                calendar_score: {
+                                    type: 'float'
+                                },
+                                calendars: {
                                     type: 'nested',
                                     properties: {
                                         checkin: {
