@@ -231,6 +231,18 @@ module.exports = {
                                             enabled: false
                                         }
                                     }
+                                },
+                                project: {
+                                    dynamic: false,
+                                    properties: {
+                                        id: {
+                                            type: 'keyword'
+                                        },
+                                        name: {
+                                            type: 'object',
+                                            enabled: false
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -279,10 +291,7 @@ module.exports = {
                                 },
                                 price: {
                                     properties: {
-                                        discount: {
-                                            type: 'byte'
-                                        },
-                                        price: {
+                                        base: {
                                             type: 'double'
                                         },
                                         occupancy_information: {
@@ -295,6 +304,24 @@ module.exports = {
                                                 },
                                                 number_of_infants: {
                                                     type: 'short'
+                                                }
+                                            }
+                                        },
+                                        customs: {
+                                            type: 'nested',
+                                            properties: {
+                                                price: {
+                                                    type: 'double'
+                                                },
+                                                currency: {
+                                                    type: 'object',
+                                                    enabled: false
+                                                },
+                                                discount: {
+                                                    type: 'float'
+                                                },
+                                                date: {
+                                                    type: 'date'
                                                 }
                                             }
                                         }
