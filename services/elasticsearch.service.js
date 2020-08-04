@@ -294,6 +294,9 @@ module.exports = {
                                         base: {
                                             type: 'double'
                                         },
+                                        max_guest: {
+                                            type: 'short'
+                                        },
                                         occupancy_information: {
                                             properties: {
                                                 number_of_adults: {
@@ -312,10 +315,6 @@ module.exports = {
                                             properties: {
                                                 price: {
                                                     type: 'double'
-                                                },
-                                                currency: {
-                                                    type: 'object',
-                                                    enabled: false
                                                 },
                                                 discount: {
                                                     type: 'float'
