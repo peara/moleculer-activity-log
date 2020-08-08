@@ -275,9 +275,6 @@ module.exports = {
                                         }
                                     }
                                 },
-                                calendar_score: {
-                                    type: 'float'
-                                },
                                 calendars: {
                                     type: 'nested',
                                     properties: {
@@ -326,6 +323,19 @@ module.exports = {
                                         }
                                     }
                                 }
+                            }
+                        },
+                        score: {
+                            properties: {
+                                booking_type: { type: 'float' },
+                                cancel_policy: { type: 'float' },
+                                price: { type: 'float' },
+                                calendar: { type: 'float' },
+                                rating: {
+                                    average: { type: 'float' },
+                                    count: { type: 'float' }
+                                },
+                                promotion: { type: 'float' }
                             }
                         }
                     }
