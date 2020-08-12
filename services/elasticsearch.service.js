@@ -173,6 +173,9 @@ module.exports = {
                 },
                 mappings: {
                     properties: {
+                        status: {
+                            type: 'keyword'
+                        },
                         name: {
                             type: 'object',
                             enabled: false
