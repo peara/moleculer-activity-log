@@ -335,8 +335,10 @@ module.exports = {
                                 price: { type: 'float' },
                                 calendar: { type: 'float' },
                                 rating: {
-                                    average: { type: 'float' },
-                                    count: { type: 'float' }
+                                    properties: {
+                                        average: { type: 'float' },
+                                        count: { type: 'float' }
+                                    }
                                 },
                                 promotion: { type: 'float' }
                             }
