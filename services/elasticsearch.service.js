@@ -28,6 +28,9 @@ module.exports = {
                 },
                 mappings: {
                     properties: {
+                        id: {
+                            type: 'keyword'
+                        },
                         name: {
                             dynamic: 'strict',
                             properties: {
@@ -135,6 +138,8 @@ module.exports = {
                 mappings: {
                     dynamic: false,
                     properties: {
+                        id: { type: 'keyword' },
+                        status: { type: 'keyword' },
                         original_id: { type: 'keyword' },
                         name: {
                             properties: {
@@ -173,6 +178,9 @@ module.exports = {
                 },
                 mappings: {
                     properties: {
+                        id: {
+                            type: 'keyword'
+                        },
                         status: {
                             type: 'keyword'
                         },
@@ -325,6 +333,12 @@ module.exports = {
                                             }
                                         }
                                     }
+                                },
+                                calendar_score: {
+                                    type: 'float'
+                                },
+                                price_score: {
+                                    type: 'float'
                                 }
                             }
                         },
@@ -374,7 +388,7 @@ module.exports = {
                 const { index, body: bodyPayload } = ctx.params;
                 let body = lodash.flatMap(
                     bodyPayload,
-                    doc => [{ update: { _index: index, _id: doc.id } }, { doc: lodash.omit(doc, ['id']), doc_as_upsert: true }]
+                    doc => [{ update: { _index: index, _id: doc.id } }, { doc, doc_as_upsert: true }]
                 );
                 let res = await client.bulk({ refresh: true, body });
                 return res;
