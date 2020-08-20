@@ -164,6 +164,7 @@ module.exports = {
                         },
                         count: { type: 'integer' },
                         display_text: { type: 'object', enabled: false },
+                        meta: { type: 'object', enabled: false },
                         type: { type: 'keyword' }
                     }
                 }
