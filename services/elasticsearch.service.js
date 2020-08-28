@@ -140,6 +140,9 @@ module.exports = {
                     properties: {
                         id: { type: 'keyword' },
                         status: { type: 'keyword' },
+                        hidden: {
+                            type: 'boolean'
+                        },
                         original_id: { type: 'keyword' },
                         name: {
                             properties: {
@@ -184,6 +187,9 @@ module.exports = {
                         },
                         status: {
                             type: 'keyword'
+                        },
+                        hidden: {
+                            type: 'boolean'
                         },
                         name: {
                             type: 'object',
