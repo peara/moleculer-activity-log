@@ -425,6 +425,17 @@ module.exports = {
             }
         },
 
+        mget: {
+            params: {
+                index: { type: 'string' },
+                body: { type: 'object' },
+                $$strict: 'remove'
+            },
+            handler(ctx) {
+                return client.mget(ctx.params);
+            }
+        },
+
         update: {
             params: {
                 index: { type: 'string' },
