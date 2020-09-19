@@ -76,8 +76,6 @@ module.exports = {
             index: 'client-search',
             body: {
                 settings: {
-                    number_of_shards: 3,
-                    number_of_replicas: 2,
                     analysis: {
                         analyzer: {
                             vietnamese: {
@@ -177,7 +175,6 @@ module.exports = {
             index: 'client-properties',
             body: {
                 settings: {
-                    number_of_shards: 3,
                     number_of_replicas: 2
                 },
                 mappings: {
@@ -306,7 +303,10 @@ module.exports = {
                                 },
                                 price: {
                                     properties: {
-                                        base: {
+                                        weekday: {
+                                            type: 'double'
+                                        },
+                                        weekend: {
                                             type: 'double'
                                         },
                                         max_guest: {
