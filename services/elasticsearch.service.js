@@ -509,6 +509,14 @@ module.exports = {
             handler(ctx) {
                 return client.count(ctx.params);
             }
+        },
+
+        createNewIndexClientProperties: {
+            async handler() {
+                const index = `${this.settings.clientPropertiesIndex.index}-${new Date().getTime()}`;
+                await client.indices.create({ index, body: this.settings.clientPropertiesIndex.body });
+                return index;
+            }
         }
     },
 
@@ -556,7 +564,6 @@ module.exports = {
         if (status === 'ok') {
             this.createIndexIfNotExists(this.settings.adminPropertiesIndex);
             this.createIndexIfNotExists(this.settings.clientSearchIndex);
-            this.createIndexIfNotExists(this.settings.clientPropertiesIndex);
         }
     },
 
