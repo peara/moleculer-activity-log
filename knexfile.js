@@ -49,9 +49,9 @@ module.exports = {
         ...baseConfig,
         connection: {
             host: 'postgres',
-            user: 'activity_log_ci',
-            password: 'activity_log_ci',
-            database: 'activity_log_test',
+            user: process.env.POSTGRES_USER,
+            password: process.env.POSTGRES_PASSWORD,
+            database: process.env.POSTGRES_DB,
             port: '5432'
         },
         pool: {

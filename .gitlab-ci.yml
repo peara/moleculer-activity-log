@@ -1,27 +1,35 @@
+---
+# Gitlab CI configuration file
+image: registry.luxstay.net/tech-server-deploy/docker-hub:runner-k8s
+
+variables:
+  IMAGE_TAG: $CI_REGISTRY/$CI_PROJECT_PATH:$CI_COMMIT_REF_NAME
+  CI_REGISTRY: registry.luxstay.net
+
 stages:
   - test
+  - dockerize
   - deploy
 
 test-ci:
   stage: test
   tags:
-    - runner-docker
+    - luxstay-runner
   image: node:10.16
   cache:
     paths:
       - node_modules/
   services:
-    - postgres:11.3
     - redis:5
+    - postgres:11.3
     - name: docker.elastic.co/elasticsearch/elasticsearch:7.6.1
       alias: elasticsearch
       command: [ "bin/elasticsearch", "-Expack.security.enabled=false", "-Ediscovery.type=single-node" ]
-
   variables:
     CACHER: redis://redis:6379
-    POSTGRES_DB: activity_log_test
-    POSTGRES_USER: activity_log_ci
-    POSTGRES_PASSWORD: activity_log_ci
+    POSTGRES_DB: test
+    POSTGRES_USER: ci_user
+    POSTGRES_PASSWORD: ci_password
   script:
     - npm install
     - npx knex migrate:latest --env ci
@@ -29,34 +37,78 @@ test-ci:
     - curl "http://elasticsearch:9200/_cat/health"
     - npm run test-ci
 
-deploy:
-  stage: deploy
+# Dockerize image dev and staging
+#
+dockerize_stag:
+  stage: dockerize
+  before_script:
+    - . /potter
   tags:
-    - runner-deploy
+    - luxstay-runner
   variables:
-    IMAGE_NAME: activity-log-service
     GIT_STRATEGY: clone
   script:
-    - docker build -t $IMAGE_NAME .
-    - cat "$GCLOUD_SERVICE_KEY" | docker login -u _json_key --password-stdin https://asia.gcr.io
-    - docker tag $IMAGE_NAME asia.gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME:latest
-    - docker push asia.gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME:latest
-    - /home/gitlab-runner/staging-scripts/deploy.sh
+    - registry_login
+    - docker build --build-arg node_env=staging -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
   only:
+    - master
     - dev
 
-deploy-staging:
+#
+# DEPLOY Kubernetes
+#
+deploy_staging:
+  environment: prod
   stage: deploy
+  before_script:
+    - . /potter
   tags:
-    - runner-deploy
+    - luxstay-runner
+  only:
+    - tags
+  script:
+    - create_kubeconfig_nonprod
+    - kubectl rollout restart deployment $CI_PROJECT_NAME -n luxstay-v3
+  when: manual
+  only:
+    - master
+    - dev
+
+
+
+# Dockerize image production
+#
+dockerize_prod:
+  stage: dockerize
+  before_script:
+    - pwd
+    - . /potter
+  tags:
+    - luxstay-runner
   variables:
-    IMAGE_NAME: activity-log-service
     GIT_STRATEGY: clone
   script:
-    - docker build -t $IMAGE_NAME .
-    - cat "$GCLOUD_SERVICE_KEY" | docker login -u _json_key --password-stdin https://asia.gcr.io
-    - docker tag $IMAGE_NAME asia.gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME:latest
-    - docker push asia.gcr.io/$GCP_PROJECT_ID/$IMAGE_NAME:latest
-    - /home/gitlab-runner/staging-scripts/deploy-staging.sh
+    - registry_login
+    - docker build --build-arg node_env=production -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
   only:
-    - staging
+    - tags
+
+#
+# DEPLOY Kubernetes
+#
+deploy_prod:
+  environment: prod
+  stage: deploy
+  before_script:
+    - . /potter
+  tags:
+    - luxstay-runner
+  script:
+    - create_kubeconfig_prod
+    - kubectl set image deployment/$CI_PROJECT_NAME $CI_PROJECT_NAME=$IMAGE_TAG -n luxstay-v3
+  when: manual
+  only:
+    - tags
+
