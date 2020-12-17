@@ -48,11 +48,11 @@ module.exports = {
     ci: {
         ...baseConfig,
         connection: {
-            host: 'localhost',
-            user: 'postgres',
-            password: '',
-            database: 'activity_log_test',
-            port: '5433'
+            host: 'postgres',
+            user: process.env.POSTGRES_USER,
+            password: process.env.POSTGRES_PASSWORD,
+            database: process.env.POSTGRES_DB,
+            port: '5432'
         },
         pool: {
             min: 1,

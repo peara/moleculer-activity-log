@@ -1,6 +1,6 @@
 'use strict';
 
-const { ValidationError } = require('moleculer').Errors;
+const { ValidationError, MoleculerError } = require('moleculer').Errors;
 const lodash = require('lodash');
 const QueueService = require('moleculer-bull');
 const QueueConfig = require('../config/queue');
@@ -17,8 +17,17 @@ module.exports = {
         // TODO make this configable by admin
         trackedTypes: {
             property: {
-                logAction: 'admin-property.showFullLog'
-            }
+                logAction: 'admin-property.showFullLog',
+                logType: 'object',
+                idName: 'id'
+            },
+            calendar: { logType: 'simple' },
+            'accommodation-prices': {
+                logAction: 'host-price.show',
+                logType: 'object',
+                idName: 'accommodation_id'
+            },
+            'custom-prices': { logType: 'simple' }
         }
     },
     mixins: [QueueService(QueueConfig.url)],
@@ -26,53 +35,73 @@ module.exports = {
         'activity-log.create': {
             concurrency: 1,
             async process(job) {
-                const { payload, eventName } = job.data;
+                const { payload, eventName, logType } = job.data;
                 const [objectType, action] = eventName.split('.');
-                let { before, version } = await this.regenerate({
-                    object_type: objectType,
-                    object_id: payload.object_id
-                });
-                const current = await this.broker.call(
-                    this.settings.trackedTypes[objectType].logAction,
-                    { id: payload.object_id }
-                ).catch(() => undefined);
-                if (current === undefined) {
-                    this.logger.error('Object not found for job:', job.data);
-                    throw new Error('object-not-found');
-                }
-                const changes = jsonpatch.compare(before, current);
-                version += 1;
-                const activityLog = ActivityLog.fromJson({
-                    actor_type: payload.actor_type,
-                    actor_id: payload.actor_id,
-                    object_type: objectType,
-                    object_id: payload.object_id,
-                    changes: JSON.stringify(changes),
-                    action,
-                    version
-                });
+                if (logType === 'object') {
+                    let { before, version } = await this.regenerate({
+                        object_type: objectType,
+                        object_id: payload.object_id
+                    });
+                    const params = {};
+                    params[this.settings.trackedTypes[objectType].idName || 'id'] = payload.object_id;
+                    const current = await this.broker.call(
+                        this.settings.trackedTypes[objectType].logAction,
+                        params
+                    ).catch(() => undefined);
+                    if (current === undefined) {
+                        this.logger.error('Object not found for job:', job.data);
+                        throw new Error('object-not-found');
+                    }
+                    const changes = jsonpatch.compare(before, current);
+                    if (changes.length === 0) return true;
+                    version += 1;
+                    const activityLog = ActivityLog.fromJson({
+                        actor_type: payload.actor_type,
+                        actor_id: payload.actor_id,
+                        object_type: objectType,
+                        object_id: payload.object_id,
+                        changes: JSON.stringify(changes),
+                        action,
+                        version
+                    });
                     // TODO using config of object type
-                if (version % 10 === 0) {
-                    activityLog.object = current;
-                }
-                return activityLog.$query().insert()
-                    .then(() => {
-                        this.broker.emit('activity-log.created', {
-                            object_type: objectType,
-                            object_id: payload.object_id,
-                            action
+                    if (version % 10 === 0) {
+                        activityLog.object = current;
+                    }
+                    return activityLog.$query().insert()
+                        .then(() => {
+                            this.broker.emit('activity-log.created', {
+                                object_type: objectType,
+                                object_id: payload.object_id,
+                                action
+                            });
+                        })
+                        .then(() => {
+                            return Promise.resolve();
+                        })
+                        .catch(err => {
+                            this.logger.error(err, 'Job:', job.data);
+                            throw err;
                         });
-                    })
-                    .then(() => {
-                        return {
-                            done: true,
-                            id: job.data.id
-                        };
-                    })
-                    .catch(err => {
+                }
+                if (logType === 'simple') {
+                    if (objectType === 'calendar') {
+                        payload.object_id = payload.object.accommodation_id;
+                    }
+                    return ActivityLog.query().insert({
+                        actor_type: payload.actor_type,
+                        actor_id: payload.actor_id,
+                        object_type: objectType,
+                        object_id: payload.object_id,
+                        changes: payload.object,
+                        action,
+                        version: (new Date()).getTime()
+                    }).catch(err => {
                         this.logger.error(err, 'Job:', job.data);
                         throw err;
                     });
+                }
+                return Promise.resolve();
             }
         }
     },
@@ -93,13 +122,13 @@ module.exports = {
             params: {
                 action: { type: 'string', optional: true },
                 object_type: { type: 'string', optional: true },
-                object_id: { type: 'string', optional: true },
-                actor_id: { type: 'string', optional: true },
+                object_id: { type: 'number', optional: true },
+                actor_id: { type: 'number', optional: true },
                 actor_type: { type: 'string', optional: true },
                 from: { type: 'string' },
                 to: { type: 'string' },
                 page: {
-                    type: 'string', integer: true, positive: true, optional: true
+                    type: 'number', integer: true, positive: true, optional: true
                 },
                 per_page: {
                     type: 'number', integer: true, positive: true, optional: true
@@ -136,7 +165,37 @@ module.exports = {
                     .where(filters)
                     .where('created_at', '>=', from)
                     .where('created_at', '<=', to)
+                    .orderBy('created_at', 'desc')
                     .page(page, perPage);
+            }
+        },
+
+        showLatestByVersion: {
+            params: {
+                object_type: 'string',
+                object_id: 'number',
+                version: 'number'
+            },
+            async handler(ctx) {
+                if (_.get(this.settings.trackedTypes, `${ctx.params.object_type}.logType`) !== 'object') {
+                    throw new ValidationError('object-type-invalid', null, [], []);
+                }
+
+                const id = await ActivityLog.query()
+                    .findOne(ctx.params)
+                    .orderBy('object_id')
+                    .distinct('object_id')
+                    .pluck('object_id');
+
+                if (!id) {
+                    throw new MoleculerError('log-not-found', 400);
+                }
+
+                return this.regenerate({
+                    object_type: ctx.params.object_type,
+                    object_id: id,
+                    version: ctx.params.version
+                });
             }
         },
 
@@ -192,7 +251,8 @@ module.exports = {
                 this.logger.info(`Found new update for ${objectType} ${payload.object_id}`);
                 this.createJob('activity-log.create', '', {
                     payload,
-                    eventName
+                    eventName,
+                    logType: this.settings.trackedTypes[objectType].logType
                 }, {
                     attempts: 3,
                     backoff: 1000,
@@ -211,7 +271,17 @@ module.exports = {
         // - object_id
         async regenerate(params) {
             // TODO using config of object type
-            const logs = await ActivityLog.query().where(params).orderBy('id', 'desc').limit(10);
+            const logs = await ActivityLog
+                .query()
+                .where(query => {
+                    if (params.version) {
+                        return query.where('version', '<=', params.version);
+                    }
+                    return query;
+                })
+                .where({ object_id: params.object_id, object_type: params.object_type })
+                .orderBy('id', 'desc')
+                .limit(10);
             _.reverse(logs);
             const checkpoint = logs.findIndex(log => {
                 return log.object;
@@ -224,7 +294,7 @@ module.exports = {
             }
             return {
                 before,
-                version: logs.length > 0 ? logs[logs.length - 1].version : -1
+                version: logs.length > 0 ? Number.parseInt(logs[logs.length - 1].version, 10) : -1
             };
         }
 
@@ -248,6 +318,6 @@ module.exports = {
      * Service stopped lifecycle event handler
      */
     stopped() {
-
+        this.getQueue('activity-log.create').close();
     }
 };

@@ -5,7 +5,8 @@ const ActivityLog = require('@models/activity_log');
 const ActivityLogService = require('../../services/activity_logs.service');
 const MockPropertyService = require('../mocks/property.service.js');
 
-const { truncate, disconnectDB } = require('../helpers/test_init');
+const knex = require('../../config/database');
+const { truncate, disconnectDB } = require('../helpers/test_init')(knex);
 const moment = require('moment-timezone');
 
 describe("Test 'activity-log' service", () => {
@@ -75,11 +76,11 @@ describe("Test 'activity-log' service", () => {
                 const request = await broker.call('activity-log.list', {
                     from: moment.tz(tz).subtract(1, 'days').format(),
                     to: moment.tz(tz).add(1, 'days').format(),
-                    object_id: '1',
+                    object_id: 1,
                     object_type: 'property'
                 });
 
-                expect(request.data[1]).toEqual(
+                expect(request.data[0]).toEqual(
                     expect.objectContaining({
                         action: 'updated',
                         changes: [{
@@ -103,7 +104,7 @@ describe("Test 'activity-log' service", () => {
                 const request = await broker.call('activity-log.list', {
                     from: moment.tz(tz).add(1, 'days').format(),
                     to: moment.tz(tz).add(7, 'days').format(),
-                    actor_id: '2'
+                    actor_id: 2
                 });
                 expect(request.data.length).toEqual(0);
                 done();
@@ -161,6 +162,37 @@ describe("Test 'activity-log' service", () => {
                         }
                     }
                 ]);
+                done();
+            }, 2000);
+        });
+    });
+
+    describe('Test "activity-log.create"', () => {
+        beforeAll(() => truncate());
+
+        test('create simple log', async (done) => {
+            broker.emit('calendar.lock', {
+                actor_id: 1,
+                actor_type: 'host',
+                object: {
+                    accommodation_id: 100,
+                    check_in: '2020-01-05',
+                    check_out: '2020-01-07',
+                    quantity: 1
+                }
+            });
+
+            setTimeout(async () => {
+                const res = await ActivityLog.query().where({ object_type: 'calendar' }).first();
+                expect(res).toEqual(
+                    expect.objectContaining({
+                        action: 'lock',
+                        changes: expect.objectContaining({
+                            accommodation_id: 100
+                        }),
+                        object_type: 'calendar'
+                    })
+                );
                 done();
             }, 2000);
         });
