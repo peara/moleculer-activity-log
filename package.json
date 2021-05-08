@@ -22,7 +22,7 @@
   "devDependencies": {
     "eslint": "^5.0.1",
     "eslint-config-airbnb-base": "^13.1.0",
-    "handlebars": "^4.7.2",
+    "handlebars": "^4.7.7",
     "jest": "^25.0.0",
     "jest-cli": "^25.0.0",
     "moleculer-repl": "^0.6.1"
