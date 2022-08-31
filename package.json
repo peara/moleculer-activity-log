@@ -38,7 +38,7 @@
     "moleculer": "^0.13.0",
     "moleculer-bull": "^0.2.5",
     "moment": "^2.24.0",
-    "moment-timezone": "^0.5.26",
+    "moment-timezone": "^0.5.35",
     "objection": "^1.6.9",
     "pg": "^7.11.0",
     "randomstring": "^1.1.5",
