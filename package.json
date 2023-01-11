@@ -33,7 +33,7 @@
     "esm": "^3.2.25",
     "fast-json-patch": "^3.0.0-1",
     "ioredis": "^3.2.2",
-    "knex": "^0.19.5",
+    "knex": "^2.4.0",
     "lodash": "^4.17.11",
     "moleculer": "^0.13.0",
     "moleculer-bull": "^0.2.5",
